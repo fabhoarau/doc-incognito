@@ -73,6 +73,18 @@ Then open http://127.0.0.1:5173 - the Vite dev server proxies /api to the
 backend on 127.0.0.1:8000. Three tabs: Anonymize (text pipeline + image
 redaction), My personal data (perso.txt editor), Metadata check.
 
+## Tests
+
+Backend (pytest, isolated tmp dirs - the real perso.txt is never touched):
+
+    cd backend
+    pip install -r requirements-dev.txt
+    python -m pytest tests -q
+
+Frontend (vitest + Testing Library, API mocked):
+
+    cd frontend && npm test
+
 CLI - text pipeline (anonymized .txt + metadata-free PDF):
 
     python -m scripts.anonymize_document path/to/statement.pdf

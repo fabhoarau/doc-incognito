@@ -24,6 +24,8 @@ export default function App() {
         {TABS.map((t) => (
           <button
             key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
             className={tab === t.id ? 'tab active' : 'tab'}
             onClick={() => setTab(t.id)}
           >
