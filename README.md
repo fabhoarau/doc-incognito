@@ -28,7 +28,7 @@ to AI. Everything runs on your machine - no network calls, nothing leaves.
     |  |  |- main.py          # FastAPI app factory (127.0.0.1 only)
     |  |- scripts/            # CLI entry points
     |  |- requirements.txt
-    |- frontend/              # Vite + React (coming soon)
+    |- frontend/              # Vite + React + TS web UI (dev server on 5173)
     |- perso.txt.example      # template: copy to perso.txt and fill in your own data
     |- uploads/ output/       # gitignored runtime directories
 
@@ -63,6 +63,15 @@ Start the local API (from backend/, venv active):
     uvicorn app.main:app --reload
 
 Interactive docs: http://127.0.0.1:8000/api/docs
+
+Web UI (from frontend/):
+
+    npm install
+    npm run dev
+
+Then open http://127.0.0.1:5173 - the Vite dev server proxies /api to the
+backend on 127.0.0.1:8000. Three tabs: Anonymize (text pipeline + image
+redaction), My personal data (perso.txt editor), Metadata check.
 
 CLI - text pipeline (anonymized .txt + metadata-free PDF):
 

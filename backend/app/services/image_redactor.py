@@ -63,6 +63,6 @@ def redact_image(path: Path) -> tuple[Path, int]:
     # Fresh RGB copy guarantees a metadata-free PNG.
     clean = Image.new("RGB", image.size)
     clean.paste(image)
-    out = path.with_name(f"{path.stem}_redacted.png")
+    out = settings.output_dir / f"{path.stem}_redacted.png"
     clean.save(out)
     return out, len(to_redact)

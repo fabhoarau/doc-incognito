@@ -1,0 +1,155 @@
+:root {
+  color-scheme: dark;
+  font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: #14171c;
+  color: #e6e9ee;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.app {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.subtitle {
+  margin: 4px 0 20px;
+  color: #9aa4b2;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #2a3038;
+  margin-bottom: 20px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #9aa4b2;
+  font-size: 15px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.tab.active {
+  color: #fff;
+  border-bottom-color: #4f8cff;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+button {
+  background: #4f8cff;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 9px 16px;
+}
+
+button:disabled {
+  background: #3a4350;
+  color: #8a93a1;
+  cursor: not-allowed;
+}
+
+input[type='file'] {
+  color: #9aa4b2;
+}
+
+textarea {
+  background: #1b2027;
+  border: 1px solid #2a3038;
+  border-radius: 6px;
+  color: #e6e9ee;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  padding: 10px;
+  width: 100%;
+}
+
+.hint {
+  color: #9aa4b2;
+  line-height: 1.5;
+}
+
+.card {
+  background: #1b2027;
+  border: 1px solid #2a3038;
+  border-radius: 8px;
+  margin-top: 16px;
+  padding: 16px 20px;
+}
+
+.card h2 {
+  font-size: 17px;
+  margin: 0 0 8px;
+  word-break: break-all;
+}
+
+table {
+  border-collapse: collapse;
+  margin: 10px 0;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid #2a3038;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+th {
+  color: #9aa4b2;
+  font-weight: 600;
+}
+
+tr.leak td {
+  color: #ff9d9d;
+}
+
+td.value {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.ok {
+  color: #6fdc9c;
+}
+
+.error {
+  color: #ff9d9d;
+}
+
+.muted {
+  color: #9aa4b2;
+  font-size: 12px;
+}
+
+a {
+  color: #4f8cff;
+}
