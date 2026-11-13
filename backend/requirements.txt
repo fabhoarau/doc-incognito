@@ -10,3 +10,4 @@ pytesseract>=0.3.13
 pdf2image>=1.17
 Pillow>=10.4
 # ocrmypdf and tesseract are installed via Homebrew, not pip.
+python-multipart>=0.0.18
