@@ -72,6 +72,9 @@ Web UI (from frontend/):
 Then open http://127.0.0.1:5173 - the Vite dev server proxies /api to the
 backend on 127.0.0.1:8000. Three tabs: Anonymize (text pipeline + image
 redaction), My personal data (perso.txt editor), Metadata check.
+The UI is multilingual (English/French, auto-detected from the browser
+language, switchable in the header). To add a language, add a locale file in
+frontend/src/i18n/ and register it in localeCodes.
 
 ## Tests
 

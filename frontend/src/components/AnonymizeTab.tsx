@@ -1,10 +1,17 @@
 import { useState } from 'react'
 import { anonymizeDocument, redactImage } from '../api'
+import { mapError, mapValue, useI18n } from '../i18n'
 import type { AnonymizationResult, RedactionResult } from '../types'
+import Dropzone from './Dropzone'
 
 const IMAGE_RE = /\.(png|jpe?g)$/i
 
+function maskLeak(leak: string): string {
+  return leak.length <= 2 ? '••' : `${leak.slice(0, 2)}…`
+}
+
 export default function AnonymizeTab() {
+  const { t } = useI18n()
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState<'anonymize' | 'redact' | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -12,6 +19,13 @@ export default function AnonymizeTab() {
   const [redaction, setRedaction] = useState<RedactionResult | null>(null)
 
   const isImage = file ? IMAGE_RE.test(file.name) : false
+
+  function pick(next: File | null) {
+    setFile(next)
+    setResult(null)
+    setRedaction(null)
+    setError(null)
+  }
 
   async function run(kind: 'anonymize' | 'redact') {
     if (!file) return
@@ -33,96 +47,145 @@ export default function AnonymizeTab() {
   }
 
   return (
-    <section>
-      <p className="hint">
-        PDF, PNG or JPEG. The text pipeline produces an anonymized .txt (plus a metadata-free
-        PDF for PDFs); image redaction paints irreversible black rectangles over sensitive zones.
-      </p>
-      <div className="row">
-        <input
-          type="file"
-          accept=".pdf,.png,.jpg,.jpeg"
-          onChange={(e) => {
-            setFile(e.target.files?.[0] ?? null)
-            setResult(null)
-            setRedaction(null)
-            setError(null)
-          }}
-        />
-      </div>
-      <div className="row">
-        <button disabled={!file || busy !== null} onClick={() => run('anonymize')}>
-          {busy === 'anonymize' ? 'Anonymizing…' : 'Anonymize'}
-        </button>
-        <button disabled={!file || !isImage || busy !== null} onClick={() => run('redact')}>
-          {busy === 'redact' ? 'Redacting…' : 'Redact image'}
-        </button>
-      </div>
+    <>
+      <Dropzone onFile={pick} file={file} />
 
-      {error && <p className="error">Error: {error}</p>}
+      {!file && !result && !redaction && (
+        <div className="explain">
+          <p>{t.anonymize.intro}</p>
+          <div className="explain-grid">
+            <div className="explain-card">
+              <h3>1. {t.anonymize.anonymizeText}</h3>
+              <p>{t.anonymize.anonymizeTextHelp}</p>
+            </div>
+            <div className="explain-card">
+              <h3>
+                2. {t.anonymize.redact}{' '}
+                <span className="badge-warn">{t.anonymize.irreversible}</span>
+              </h3>
+              <p>{t.anonymize.redactHelp}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {file && !result && !redaction && (
+        <div className="actions">
+          <p className="muted">{isImage ? t.anonymize.isImage : t.anonymize.isPdf}</p>
+          <button
+            type="button"
+            className="primary"
+            disabled={busy !== null}
+            onClick={() => run('anonymize')}
+          >
+            {busy === 'anonymize' ? t.anonymize.anonymizing : t.anonymize.anonymizeText}
+          </button>
+          <p className="help">{t.anonymize.anonymizeTextHelp}</p>
+          {isImage && (
+            <>
+              <button
+                type="button"
+                className="ghost"
+                disabled={busy !== null}
+                onClick={() => run('redact')}
+              >
+                {busy === 'redact' ? t.anonymize.redacting : t.anonymize.redact}{' '}
+                <span className="badge-warn">{t.anonymize.irreversible}</span>
+              </button>
+              <p className="help">{t.anonymize.redactHelp}</p>
+            </>
+          )}
+        </div>
+      )}
+
+      {busy && (
+        <div className="progress" aria-live="polite">
+          <div className="progress-bar" />
+          <p className="muted small">{t.anonymize.progress}</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="alert" role="alert">
+          <strong>{t.common.errorTitle}:</strong> {mapError(t, error)}
+        </div>
+      )}
 
       {result && (
-        <div className="card">
-          <h2>{result.input_name}</h2>
-          <p>
-            Extraction: <code>{result.extraction_mode}</code> — {result.total_replacements}{' '}
-            replacement{result.total_replacements === 1 ? '' : 's'}
+        <div className={result.guardrail_passed ? 'card ok-border' : 'card err-border'}>
+          <h2>
+            {t.anonymize.result} — {result.input_name}
+          </h2>
+          <div className="stats">
+            <div className="stat">
+              <span className="stat-num">{result.total_replacements}</span>
+              <span className="stat-label">{t.anonymize.statsReplacements(result.total_replacements)}</span>
+            </div>
+            <div className="stat">
+              <span className="stat-num">{result.replacements.length}</span>
+              <span className="stat-label">{t.anonymize.statsEntityTypes(result.replacements.length)}</span>
+            </div>
+          </div>
+          <p className="muted small">
+            {t.anonymize.extraction}:{' '}
+            <code>{mapValue(t.values.extractionMode, result.extraction_mode)}</code>
           </p>
           {result.replacements.length > 0 && (
-            <table>
-              <thead>
-                <tr>
-                  <th>Entity</th>
-                  <th>Count</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              <p className="downloads-title">{t.anonymize.detail}</p>
+              <div className="chips">
                 {result.replacements.map((r) => (
-                  <tr key={r.entity_type}>
-                    <td>{r.entity_type}</td>
-                    <td>{r.count}</td>
-                  </tr>
+                  <span key={r.entity_type} className="chip">
+                    {mapValue(t.values.entityType, r.entity_type)} ×{r.count}
+                  </span>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
           <p className={result.guardrail_passed ? 'ok' : 'error'}>
-            Guardrail: {result.guardrail_passed ? 'passed - no personal data survived' : 'FAILED'}
+            {result.guardrail_passed
+              ? t.anonymize.guardrailOk
+              : t.anonymize.guardrailFail(result.leaks.length)}
           </p>
           {!result.guardrail_passed && result.leaks.length > 0 && (
-            <ul className="error">
-              {result.leaks.map((leak, i) => (
-                <li key={i}>leaked: {leak}</li>
-              ))}
-            </ul>
+            <p className="muted small">
+              {result.leaks.map((leak) => maskLeak(leak)).join(', ')}
+            </p>
           )}
-          <ul>
-            {result.output_files.map((f) => (
-              <li key={f.filename}>
-                <a href={f.download_url} download>
-                  Download {f.label}
-                </a>{' '}
-                <span className="muted">({f.filename})</span>
-              </li>
-            ))}
-          </ul>
+          <p className="downloads-title">{t.anonymize.downloads}</p>
+          {result.output_files.map((f) => (
+            <div key={f.filename} className="download">
+              <a className="btn primary block" href={f.download_url} download>
+                {mapValue(t.values.outputLabel, f.label)}
+              </a>
+              <span className="muted small">{f.filename}</span>
+            </div>
+          ))}
         </div>
       )}
 
       {redaction && (
         <div className="card">
-          <h2>{redaction.input_name}</h2>
-          <p>{redaction.redacted_zone_count} zone(s) redacted.</p>
-          <ul>
-            <li>
-              <a href={redaction.output_file.download_url} download>
-                Download {redaction.output_file.label}
-              </a>{' '}
-              <span className="muted">({redaction.output_file.filename})</span>
-            </li>
-          </ul>
+          <h2>
+            {t.anonymize.result} — {redaction.input_name}
+          </h2>
+          <div className="stats">
+            <div className="stat">
+              <span className="stat-num">{redaction.redacted_zone_count}</span>
+              <span className="stat-label">
+                {t.anonymize.statsZones(redaction.redacted_zone_count)} · {t.anonymize.zonesIrreversible}
+              </span>
+            </div>
+          </div>
+          <p className="downloads-title">{t.anonymize.downloads}</p>
+          <div className="download">
+            <a className="btn primary block" href={redaction.output_file.download_url} download>
+              {mapValue(t.values.outputLabel, redaction.output_file.label)}
+            </a>
+            <span className="muted small">{redaction.output_file.filename}</span>
+          </div>
         </div>
       )}
-    </section>
+    </>
   )
 }

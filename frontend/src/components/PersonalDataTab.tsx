@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { getPersonalData, savePersonalData } from '../api'
+import { useI18n } from '../i18n'
 
 export default function PersonalDataTab() {
+  const { t } = useI18n()
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -21,7 +23,7 @@ export default function PersonalDataTab() {
     setStatus(null)
     try {
       await savePersonalData(content)
-      setStatus('Saved locally (perso.txt). Never sent anywhere.')
+      setStatus(t.personal.saved)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -29,28 +31,35 @@ export default function PersonalDataTab() {
     }
   }
 
-  if (loading) return <p>Loading…</p>
+  if (loading) return <p>{t.common.loading}</p>
+
+  const lineCount = content.split('\n').filter((line) => line.trim()).length
 
   return (
-    <section>
-      <p className="hint">
-        One entry per line. These values are replaced with <code>[PERSO n]</code> tokens before
-        any analysis, and the guardrail verifies none of them survives in the output. The file
-        stays on this machine (gitignored).
-      </p>
+    <>
+      <p className="hint">{t.personal.help}</p>
       <textarea
         rows={14}
+        aria-label={t.personal.label}
         value={content}
+        placeholder={t.personal.placeholder}
         onChange={(e) => setContent(e.target.value)}
-        placeholder={'Jane Dupont\n12 rue de la Paix, Paris\nFR76 3000 6000 0000 0000 0000 000'}
       />
       <div className="row">
-        <button disabled={saving} onClick={save}>
-          {saving ? 'Saving…' : 'Save'}
+        <button type="button" className="primary" disabled={saving} onClick={save}>
+          {saving ? t.personal.saving : t.personal.save}
         </button>
+        <span className="muted" aria-live="polite">
+          {t.personal.lines(lineCount)}
+        </span>
       </div>
+      {lineCount === 0 && <p className="warn">{t.personal.emptyWarn}</p>}
       {status && <p className="ok">{status}</p>}
-      {error && <p className="error">Error: {error}</p>}
-    </section>
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+    </>
   )
 }
