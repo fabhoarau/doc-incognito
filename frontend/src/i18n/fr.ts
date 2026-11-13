@@ -43,19 +43,25 @@ const fr: Locale = {
     progress:
       'Extraction du texte et analyse en cours — l’OCR sur un PDF scanné ou une image peut prendre quelques secondes.',
     result: 'Résultat',
-    extraction: 'Extraction',
-    statsReplacements: (n: number) => `${n} remplacement${n === 1 ? '' : 's'}`,
-    statsEntityTypes: (n: number) => `${n} type${n === 1 ? '' : 's'} trouvé${n === 1 ? '' : 's'}`,
-    statsZones: (n: number) => `${n} zone${n === 1 ? '' : 's'} noircie${n === 1 ? '' : 's'}`,
-    zonesIrreversible: 'pixels détruits, irréversible',
-    detail: 'Détail',
-    guardrailOk:
-      'Contrôle anti-fuite réussi — aucune de vos données personnelles ne figure dans les fichiers produits.',
-    guardrailFail: (n: number) =>
+    resultReady: 'Prêt — contrôle anti-fuite réussi',
+    resultFailed: (n: number) =>
       `Contrôle anti-fuite : ÉCHEC — ${n} donnée${n === 1 ? '' : 's'} personnelle${
-        n === 1 ? ' est' : 's sont'
-      } encore présente${n === 1 ? '' : 's'} (valeurs masquées). Ne partagez pas ces fichiers : complétez « Mes données personnelles » et relancez.`,
-    downloads: 'Téléchargements',
+        n === 1 ? '' : 's'
+      } encore présente${n === 1 ? '' : 's'}`,
+    resultFailedAction:
+      'Ne partagez pas ces fichiers : complétez « Mes données personnelles » et relancez. Les valeurs des fuites restent masquées.',
+    statsLine: (replacements: number, types: number) =>
+      `${replacements} remplacement${replacements === 1 ? '' : 's'} · ${types} type${
+        types === 1 ? '' : 's'
+      } trouvé${types === 1 ? '' : 's'}`,
+    detailSummary: (n: number) => (n === 1 ? 'Voir le détail (1 type)' : `Voir le détail (${n} types)`),
+    downloadPdf: 'Télécharger le PDF anonymisé',
+    downloadTxt: 'Télécharger le texte anonymisé (.txt)',
+    downloadAlsoTxt: 'Télécharger aussi le .txt',
+    downloadImage: 'Télécharger l’image noircie (PNG)',
+    redactionBadge: 'Noircissage terminé — irréversible',
+    redactionDone: (n: number) =>
+      `${n} zone${n === 1 ? '' : 's'} noircie${n === 1 ? '' : 's'} — pixels détruits, irréversible`,
   },
   personal: {
     help: 'Renseignez ici ce qui vous identifie — une information par ligne (nom, adresse, IBAN, téléphone…). Avant toute analyse, chaque ligne est remplacée par un jeton [PERSO1], [PERSO2]…, puis le contrôle anti-fuite vérifie qu’aucune ne réapparaît dans le résultat. Le fichier perso.txt reste sur cette machine : il n’est jamais envoyé ni versionné.',
@@ -73,9 +79,10 @@ const fr: Locale = {
     inspect: 'Analyser les métadonnées',
     inspecting: 'Analyse en cours…',
     result: 'Résultat',
-    risky: (leaks: number, total: number) =>
-      `${leaks} champ${leaks === 1 ? '' : 's'} à risque sur ${total}`,
-    clean: 'Fichier propre — aucun champ à risque détecté.',
+    badgeClean: 'Propre — aucun champ à risque',
+    badgeRisky: (n: number) => `${n} champ${n === 1 ? '' : 's'} à risque`,
+    summary: (total: number, leaks: number) =>
+      `${total} métadonnée${total === 1 ? '' : 's'} · ${leaks} à risque`,
     noFields: 'Aucune métadonnée trouvée dans ce fichier.',
     field: 'Champ',
     value: 'Valeur',

@@ -41,19 +41,21 @@ const en = {
     progress:
       'Extracting text and analyzing — OCR on a scanned PDF or an image can take a few seconds.',
     result: 'Result',
-    extraction: 'Extraction',
-    statsReplacements: (n: number) => `${n} replacement${n === 1 ? '' : 's'}`,
-    statsEntityTypes: (n: number) => `${n} type${n === 1 ? '' : 's'} found`,
-    statsZones: (n: number) => `${n} zone${n === 1 ? '' : 's'} blacked out`,
-    zonesIrreversible: 'pixels destroyed, irreversible',
-    detail: 'Details',
-    guardrailOk:
-      'Leak check passed — none of your personal entries appear in the output files.',
-    guardrailFail: (n: number) =>
-      `Leak check FAILED — ${n} personal ${
-        n === 1 ? 'entry is' : 'entries are'
-      } still present (values hidden). Do not share these files: complete “My personal data” and run again.`,
-    downloads: 'Downloads',
+    resultReady: 'Ready — leak check passed',
+    resultFailed: (n: number) =>
+      `Leak check FAILED — ${n} personal ${n === 1 ? 'entry is' : 'entries are'} still present`,
+    resultFailedAction:
+      'Do not share these files: complete “My personal data” and run again. Leak values stay hidden.',
+    statsLine: (replacements: number, types: number) =>
+      `${replacements} replacement${replacements === 1 ? '' : 's'} · ${types} type${types === 1 ? '' : 's'} found`,
+    detailSummary: (n: number) => (n === 1 ? 'See details (1 type)' : `See details (${n} types)`),
+    downloadPdf: 'Download the anonymized PDF',
+    downloadTxt: 'Download the anonymized text (.txt)',
+    downloadAlsoTxt: 'Also download the .txt',
+    downloadImage: 'Download the blacked-out image (PNG)',
+    redactionBadge: 'Blackout complete — irreversible',
+    redactionDone: (n: number) =>
+      `${n} zone${n === 1 ? '' : 's'} blacked out — pixels destroyed, irreversible`,
   },
   personal: {
     help: 'Enter here what identifies you — one piece of information per line (name, address, IBAN, phone…). Before any analysis, each line is replaced by a [PERSO1], [PERSO2]… token, and the leak check then verifies that none of them reappears in the output. The perso.txt file stays on this machine: it is never sent or versioned.',
@@ -71,8 +73,10 @@ const en = {
     inspect: 'Analyze metadata',
     inspecting: 'Analyzing…',
     result: 'Result',
-    risky: (leaks: number, total: number) => `${leaks} risky field${leaks === 1 ? '' : 's'} out of ${total}`,
-    clean: 'Clean file — no risky field detected.',
+    badgeClean: 'Clean — no risky field',
+    badgeRisky: (n: number) => `${n} risky field${n === 1 ? '' : 's'}`,
+    summary: (total: number, leaks: number) =>
+      `${total} metadata field${total === 1 ? '' : 's'} · ${leaks} at risk`,
     noFields: 'No metadata found in this file.',
     field: 'Field',
     value: 'Value',

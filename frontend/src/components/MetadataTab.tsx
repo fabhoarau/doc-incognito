@@ -49,14 +49,18 @@ export default function MetadataTab() {
 
       {report && (
         <div className={report.is_clean ? 'card ok-border' : 'card err-border'}>
-          <h2>
-            {t.metadata.result} — {report.filename}
-          </h2>
           {report.is_clean ? (
-            <p className="ok">{t.metadata.clean}</p>
+            <p className="status-badge ok" role="status">
+              {t.metadata.badgeClean}
+            </p>
           ) : (
-            <p className="error">{t.metadata.risky(report.leak_count, report.fields.length)}</p>
+            <p className="status-badge danger" role="status">
+              {t.metadata.badgeRisky(report.leak_count)}
+            </p>
           )}
+          <h2 className="result-title">{t.metadata.result}</h2>
+          <p className="muted small mono">{report.filename}</p>
+          <p className="stat-line">{t.metadata.summary(report.fields.length, report.leak_count)}</p>
           {report.fields.length > 0 ? (
             <table>
               <thead>

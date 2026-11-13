@@ -81,4 +81,88 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Analyze metadata' })).toBeDisabled()
     expect(document.querySelector('input[type="file"]')).not.toBeNull()
   })
+
+  it('result card (PDF success): ready badge, PDF as primary CTA, details collapsed, no raw filename in the heading', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) =>
+        Promise.resolve(
+          String(url).includes('/api/anonymize')
+            ? jsonResponse({
+                input_name: 'doc.pdf',
+                extraction_mode: 'pdf-text',
+                total_replacements: 43,
+                replacements: [{ entity_type: 'PERSON', count: 4 }],
+                output_files: [
+                  {
+                    filename: 'doc_anonymized.txt',
+                    label: 'Anonymized text (.txt)',
+                    download_url: '/api/files/doc_anonymized.txt',
+                  },
+                  {
+                    filename: 'doc_anonymized.pdf',
+                    label: 'Anonymized PDF (metadata-free)',
+                    download_url: '/api/files/doc_anonymized.pdf',
+                  },
+                ],
+                guardrail_passed: true,
+                leaks: [],
+              })
+            : jsonResponse({ content: '' }),
+        ),
+      ),
+    )
+    renderApp()
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(fileInput, { target: { files: [new File(['x'], 'doc.pdf')] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Anonymize text' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Ready — leak check passed')
+    const heading = screen.getByRole('heading', { name: /Result/ })
+    expect(heading).not.toHaveTextContent('doc.pdf')
+    const primary = screen.getByRole('link', { name: 'Download the anonymized PDF' })
+    expect(primary).toHaveAttribute('href', '/api/files/doc_anonymized.pdf')
+    expect(screen.getByRole('link', { name: 'Also download the .txt' })).toHaveAttribute(
+      'href',
+      '/api/files/doc_anonymized.txt',
+    )
+    const summary = screen.getByText('See details (1 type)')
+    expect(summary.closest('details')).not.toHaveAttribute('open')
+  })
+
+  it('result card (guardrail failure): alert shown, leak values never in the DOM, no download CTA', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) =>
+        Promise.resolve(
+          String(url).includes('/api/anonymize')
+            ? jsonResponse({
+                input_name: 'doc.pdf',
+                extraction_mode: 'pdf-text',
+                total_replacements: 2,
+                replacements: [],
+                output_files: [
+                  {
+                    filename: 'doc_anonymized.txt',
+                    label: 'Anonymized text (.txt)',
+                    download_url: '/api/files/doc_anonymized.txt',
+                  },
+                ],
+                guardrail_passed: false,
+                leaks: ['Marie Dupont'],
+              })
+            : jsonResponse({ content: '' }),
+        ),
+      ),
+    )
+    renderApp()
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(fileInput, { target: { files: [new File(['x'], 'doc.pdf')] } })
+    fireEvent.click(screen.getByRole('button', { name: 'Anonymize text' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Leak check FAILED')
+    expect(screen.queryByText(/Marie Dupont/)).toBeNull()
+    expect(screen.queryByRole('link', { name: /Download/ })).toBeNull()
+  })
 })

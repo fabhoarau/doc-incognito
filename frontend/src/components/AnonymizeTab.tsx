@@ -1,13 +1,20 @@
 import { useState } from 'react'
 import { anonymizeDocument, redactImage } from '../api'
 import { mapError, mapValue, useI18n } from '../i18n'
-import type { AnonymizationResult, RedactionResult } from '../types'
+import type { AnonymizationResult, OutputFile, RedactionResult } from '../types'
 import Dropzone from './Dropzone'
 
 const IMAGE_RE = /\.(png|jpe?g)$/i
 
 function maskLeak(leak: string): string {
   return leak.length <= 2 ? '••' : `${leak.slice(0, 2)}…`
+}
+
+function downloadLabel(t: ReturnType<typeof useI18n>['t'], file: OutputFile): string {
+  if (file.filename.endsWith('.pdf')) return t.anonymize.downloadPdf
+  if (file.filename.endsWith('.txt')) return t.anonymize.downloadTxt
+  if (file.filename.endsWith('.png')) return t.anonymize.downloadImage
+  return mapValue(t.values.outputLabel, file.label)
 }
 
 export default function AnonymizeTab() {
@@ -45,6 +52,14 @@ export default function AnonymizeTab() {
       setBusy(null)
     }
   }
+
+  // Primary download = rebuilt PDF when present (same format as the input),
+  // otherwise the .txt; the remaining file becomes a discreet secondary link.
+  const primary = result?.output_files.find((f) => f.filename.endsWith('.pdf')) ?? result?.output_files[0]
+  const secondary =
+    result && primary && primary.filename.endsWith('.pdf')
+      ? result.output_files.find((f) => f.filename.endsWith('.txt'))
+      : undefined
 
   return (
     <>
@@ -113,26 +128,50 @@ export default function AnonymizeTab() {
 
       {result && (
         <div className={result.guardrail_passed ? 'card ok-border' : 'card err-border'}>
-          <h2>
-            {t.anonymize.result} — {result.input_name}
+          {result.guardrail_passed ? (
+            <p className="status-badge ok" role="status">
+              {t.anonymize.resultReady}
+            </p>
+          ) : (
+            <div className="status-badge danger" role="alert">
+              <strong>{t.anonymize.resultFailed(result.leaks.length)}</strong>
+              <p>{t.anonymize.resultFailedAction}</p>
+              {result.leaks.length > 0 && (
+                <p className="leak-masked">{result.leaks.map(maskLeak).join(', ')}</p>
+              )}
+            </div>
+          )}
+          <h2 className="result-title">
+            {t.anonymize.result}
+            <span className="pill">{mapValue(t.values.extractionMode, result.extraction_mode)}</span>
           </h2>
-          <div className="stats">
-            <div className="stat">
-              <span className="stat-num">{result.total_replacements}</span>
-              <span className="stat-label">{t.anonymize.statsReplacements(result.total_replacements)}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-num">{result.replacements.length}</span>
-              <span className="stat-label">{t.anonymize.statsEntityTypes(result.replacements.length)}</span>
-            </div>
-          </div>
-          <p className="muted small">
-            {t.anonymize.extraction}:{' '}
-            <code>{mapValue(t.values.extractionMode, result.extraction_mode)}</code>
+          <p className="muted small mono">{result.input_name}</p>
+          <p className="stat-line">
+            {t.anonymize.statsLine(result.total_replacements, result.replacements.length)}
           </p>
+
+          {result.guardrail_passed && primary && (
+            <div className="download">
+              <a
+                className="btn primary block"
+                href={primary.download_url}
+                download
+                title={mapValue(t.values.outputLabel, primary.label)}
+              >
+                {downloadLabel(t, primary)}
+              </a>
+              <span className="muted small mono">{primary.filename}</span>
+              {secondary && (
+                <a className="link" href={secondary.download_url} download>
+                  {t.anonymize.downloadAlsoTxt}
+                </a>
+              )}
+            </div>
+          )}
+
           {result.replacements.length > 0 && (
-            <>
-              <p className="downloads-title">{t.anonymize.detail}</p>
+            <details className="details">
+              <summary>{t.anonymize.detailSummary(result.replacements.length)}</summary>
               <div className="chips">
                 {result.replacements.map((r) => (
                   <span key={r.entity_type} className="chip">
@@ -140,49 +179,29 @@ export default function AnonymizeTab() {
                   </span>
                 ))}
               </div>
-            </>
+            </details>
           )}
-          <p className={result.guardrail_passed ? 'ok' : 'error'}>
-            {result.guardrail_passed
-              ? t.anonymize.guardrailOk
-              : t.anonymize.guardrailFail(result.leaks.length)}
-          </p>
-          {!result.guardrail_passed && result.leaks.length > 0 && (
-            <p className="muted small">
-              {result.leaks.map((leak) => maskLeak(leak)).join(', ')}
-            </p>
-          )}
-          <p className="downloads-title">{t.anonymize.downloads}</p>
-          {result.output_files.map((f) => (
-            <div key={f.filename} className="download">
-              <a className="btn primary block" href={f.download_url} download>
-                {mapValue(t.values.outputLabel, f.label)}
-              </a>
-              <span className="muted small">{f.filename}</span>
-            </div>
-          ))}
         </div>
       )}
 
       {redaction && (
-        <div className="card">
-          <h2>
-            {t.anonymize.result} — {redaction.input_name}
-          </h2>
-          <div className="stats">
-            <div className="stat">
-              <span className="stat-num">{redaction.redacted_zone_count}</span>
-              <span className="stat-label">
-                {t.anonymize.statsZones(redaction.redacted_zone_count)} · {t.anonymize.zonesIrreversible}
-              </span>
-            </div>
-          </div>
-          <p className="downloads-title">{t.anonymize.downloads}</p>
+        <div className="card ok-border">
+          <p className="status-badge warn" role="status">
+            {t.anonymize.redactionBadge}
+          </p>
+          <h2 className="result-title">{t.anonymize.result}</h2>
+          <p className="muted small mono">{redaction.input_name}</p>
+          <p className="stat-line">{t.anonymize.redactionDone(redaction.redacted_zone_count)}</p>
           <div className="download">
-            <a className="btn primary block" href={redaction.output_file.download_url} download>
-              {mapValue(t.values.outputLabel, redaction.output_file.label)}
+            <a
+              className="btn primary block"
+              href={redaction.output_file.download_url}
+              download
+              title={mapValue(t.values.outputLabel, redaction.output_file.label)}
+            >
+              {downloadLabel(t, redaction.output_file)}
             </a>
-            <span className="muted small">{redaction.output_file.filename}</span>
+            <span className="muted small mono">{redaction.output_file.filename}</span>
           </div>
         </div>
       )}

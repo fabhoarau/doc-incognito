@@ -313,41 +313,74 @@ textarea {
 }
 
 .card.err-border {
-  border-left: 3px solid #ff9d9d;
+  border: 2px solid #ff9d9d;
 }
 
-.card h2 {
+.status-badge {
+  border-radius: 6px;
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+}
+
+.status-badge.ok {
+  background: #6fdc9c;
+  color: #14171c;
+}
+
+.status-badge.danger {
+  background: #ff9d9d;
+  color: #14171c;
+}
+
+.status-badge.danger p {
+  font-weight: 400;
+  margin: 6px 0 0;
+}
+
+.status-badge.warn {
+  background: #ffcf7a;
+  color: #14171c;
+}
+
+.leak-masked {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-weight: 400 !important;
+  margin: 4px 0 0 !important;
+}
+
+.result-title {
+  align-items: center;
+  display: flex;
   font-size: 17px;
-  margin: 0 0 12px;
-  word-break: break-all;
+  gap: 10px;
+  margin: 14px 0 2px;
 }
 
-.stats {
-  display: flex;
-  gap: 24px;
-  margin: 8px 0 12px;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-num {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.stat-label {
+.pill {
+  border: 1px solid #2a3038;
+  border-radius: 999px;
   color: #9aa4b2;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 2px 10px;
+}
+
+.mono {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.stat-line {
+  font-size: 13px;
+  margin: 8px 0 14px;
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 8px 0 12px;
+  margin: 8px 0 4px;
 }
 
 .chip {
@@ -358,12 +391,14 @@ textarea {
   padding: 3px 10px;
 }
 
-.downloads-title {
-  color: #9aa4b2;
-  font-size: 12px;
-  font-weight: 600;
-  margin: 14px 0 6px;
-  text-transform: uppercase;
+.details {
+  margin: 12px 0 4px;
+}
+
+.details summary {
+  color: #4f8cff;
+  cursor: pointer;
+  font-size: 13px;
 }
 
 .download {
@@ -371,6 +406,18 @@ textarea {
   flex-direction: column;
   gap: 4px;
   margin-bottom: 10px;
+}
+
+a.link {
+  align-self: flex-start;
+  color: #4f8cff;
+  font-size: 13px;
+  padding: 4px 0;
+  text-decoration: none;
+}
+
+a.link:hover {
+  text-decoration: underline;
 }
 
 .btn.block {
