@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# User personal data - NEVER commit (each user keeps a local copy)
+perso.txt
+uploads/
+output/
+
+# Node
+node_modules/
+dist/
+
+# macOS
+.DS_Store
