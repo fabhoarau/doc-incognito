@@ -30,8 +30,8 @@ fall back to `nohup <cmd> > /tmp/doc-incognito-<name>.log 2>&1 & disown`.
 ## Test
 
     cd backend && ./venv/bin/pip install -r requirements-dev.txt
-    cd backend && ./venv/bin/python -m pytest tests -q     # 18 tests
-    cd frontend && npm test                                 # vitest, 8 tests
+    cd backend && ./venv/bin/python -m pytest tests -q     # 31 tests (incl. security)
+    cd frontend && npm test                                 # vitest, 16 tests
     cd frontend && npm run build                            # tsc --noEmit + vite build
 
 ## Layout
@@ -67,10 +67,21 @@ fall back to `nohup <cmd> > /tmp/doc-incognito-<name>.log 2>&1 & disown`.
   print perso.txt content into chat or logs.
 - No outbound network calls; bind 127.0.0.1 only; CORS limited to the local
   Vite origin.
-- Pipeline order matters: tokenize personal entries BEFORE Presidio analysis;
-  the guardrail runs LAST and must report leaks explicitly.
-- Anonymized/redacted outputs go to `output/` (served by `/api/files/<name>`);
-  raw uploads stay in `uploads/` and are never served.
+- Pipeline order matters: tokenize personal entries BEFORE Presidio analysis
+  (longest entries first, `personal_data.tokenize`); the guardrail runs LAST,
+  BEFORE any output file is written - on failure no file is produced and the
+  leak values are masked server-side (`guardrail.mask_leak`). The image pipeline
+  matches personal entries on the FULL OCR text (an entry can span several
+  words) and has the same guardrail.
+- `GET /api/files/{filename}` is confined to `output/` (resolve +
+  `is_relative_to` + suffix allowlist + `Content-Disposition: attachment`).
+  Raw uploads in `uploads/` are never served.
+- Uploads go through `services/uploads.save_upload`: suffix allowlist, size cap
+  (`ANON_MAX_UPLOAD_BYTES`, default 50 MB, 413 when exceeded), file name reduced
+  to its final component, disk write off the event loop.
+- Domain errors are `ValueError` -> 422 via a global handler in `main.py`
+  (plus `PIL.UnidentifiedImageError` -> 422). CORS: local Vite origins only,
+  explicit methods/headers.
 
 ## Known gotchas
 

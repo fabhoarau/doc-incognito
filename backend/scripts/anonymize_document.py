@@ -29,7 +29,10 @@ def main() -> None:
     if result.guardrail_passed:
         print("Guardrail OK: no personal entry remains.")
     else:
-        print(f"WARNING - personal data still present: {result.leaks}")
+        # result.leaks is already masked by the service - never print raw values
+        print(f"WARNING - guardrail failed: {len(result.leaks)} personal "
+              f"entr{'y' if len(result.leaks) == 1 else 'ies'} still present (values masked). "
+              "No output file was written.")
         sys.exit(2)
 
 

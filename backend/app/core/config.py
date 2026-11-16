@@ -11,10 +11,15 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 class Settings(BaseSettings):
     """All runtime configuration. Override with ANON_ prefixed env vars."""
 
-    # Local-only HTTP server (never exposed to the network)
+    # Local-only HTTP server (never exposed to the network).
+    # WARNING: ANON_HOST=0.0.0.0 would expose the API (and the perso.txt
+    # editor endpoints) to the local network - never do that.
     host: str = "127.0.0.1"
     port: int = 8000
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+    # Uploads are read in memory (bounded), then written to disk
+    max_upload_bytes: int = 50 * 1024 * 1024
 
     # Presidio / NLP
     language: str = "fr"
@@ -33,6 +38,6 @@ class Settings(BaseSettings):
     model_config = {"env_prefix": "ANON_"}
 
 
+# No filesystem side effect at import time: writers create the dirs on demand
+# (keeps tests and imports clean - see conftest.py).
 settings = Settings()
-settings.upload_dir.mkdir(exist_ok=True)
-settings.output_dir.mkdir(exist_ok=True)

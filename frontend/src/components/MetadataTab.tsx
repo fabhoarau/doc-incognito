@@ -65,14 +65,14 @@ export default function MetadataTab() {
             <table>
               <thead>
                 <tr>
-                  <th>{t.metadata.field}</th>
-                  <th>{t.metadata.value}</th>
-                  <th>{t.metadata.risk}</th>
+                  <th scope="col">{t.metadata.field}</th>
+                  <th scope="col">{t.metadata.value}</th>
+                  <th scope="col">{t.metadata.risk}</th>
                 </tr>
               </thead>
               <tbody>
-                {report.fields.map((f, i) => (
-                  <tr key={i} className={f.is_leak ? 'leak' : undefined}>
+                {report.fields.map((f) => (
+                  <tr key={f.name} className={f.is_leak ? 'leak' : undefined}>
                     <td>{mapValue(t.values.metadataField, f.name)}</td>
                     <td className="value">{f.value}</td>
                     <td>

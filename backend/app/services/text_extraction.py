@@ -32,20 +32,24 @@ def extract_text(path: Path) -> tuple[str, ExtractionMode]:
 
 def _ocr_pdf(path: Path) -> str:
     """OCR a scanned PDF with ocrmypdf (installed via Homebrew, not pip)."""
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-        tmp_path = tmp.name
-    try:
-        subprocess.run(
-            ["ocrmypdf", "-l", settings.ocrmypdf_lang, "--deskew", "--rotate-pages",
-             str(path), tmp_path],
-            check=True,
-            capture_output=True,
-        )
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir) / "ocr.pdf"
+        try:
+            subprocess.run(
+                ["ocrmypdf", "-l", settings.ocrmypdf_lang, "--deskew", "--rotate-pages",
+                 str(path), str(tmp_path)],
+                check=True,
+                capture_output=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            detail = exc.stderr.decode(errors="replace")[:200] if exc.stderr else "unknown error"
+            raise ValueError(f"OCR failed: {detail}") from exc
         return "\n".join(page.get_text() for page in fitz.open(tmp_path))
-    finally:
-        Path(tmp_path).unlink(missing_ok=True)
 
 
 def _ocr_image(path: Path) -> str:
     """OCR an image with tesseract (French)."""
-    return pytesseract.image_to_string(Image.open(path), lang=settings.tesseract_lang)
+    try:
+        return pytesseract.image_to_string(Image.open(path), lang=settings.tesseract_lang)
+    except pytesseract.TesseractError as exc:
+        raise ValueError(f"OCR failed: {exc}") from exc

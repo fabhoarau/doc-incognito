@@ -1,15 +1,11 @@
 """Personal data list (perso.txt) endpoints."""
 
 from fastapi import APIRouter
-from pydantic import BaseModel
 
+from app.schemas.personal_data import PersonalDataContent
 from app.services import personal_data
 
 router = APIRouter(prefix="/api/personal-data", tags=["personal-data"])
-
-
-class PersonalDataContent(BaseModel):
-    content: str
 
 
 @router.get("", response_model=PersonalDataContent)

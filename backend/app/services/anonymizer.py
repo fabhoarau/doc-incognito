@@ -6,6 +6,7 @@ extract -> tokenize personal data -> Presidio analysis/anonymization
 
 from collections import Counter
 from pathlib import Path
+from urllib.parse import quote
 
 import pymupdf as fitz
 from presidio_anonymizer import AnonymizerEngine
@@ -41,30 +42,44 @@ def anonymize_document(path: Path) -> AnonymizationResult:
         for entity, count in Counter(r.entity_type for r in analyzer_results).most_common()
     ]
 
+    # Guardrail runs BEFORE any output file is written: if a personal entry
+    # survived, no downloadable file is produced and the leak values are
+    # masked (never sent in clear in the API response).
+    leaks = guardrail.find_leaks(anonymized, entries)
+    if leaks:
+        return AnonymizationResult(
+            input_name=path.name,
+            extraction_mode=mode,
+            total_replacements=len(analyzer_results),
+            replacements=replacements,
+            output_files=[],
+            guardrail_passed=False,
+            leaks=[guardrail.mask_leak(leak) for leak in leaks],
+        )
+
     output_files = [_write_text_output(path, anonymized)]
     if path.suffix.lower() == ".pdf":
         output_files.append(_write_pdf_output(path, anonymized))
-
-    leaks = guardrail.find_leaks(anonymized, entries)
     return AnonymizationResult(
         input_name=path.name,
         extraction_mode=mode,
         total_replacements=len(analyzer_results),
         replacements=replacements,
         output_files=output_files,
-        guardrail_passed=not leaks,
-        leaks=leaks,
+        guardrail_passed=True,
+        leaks=[],
     )
 
 
 def _write_text_output(path: Path, text: str) -> OutputFile:
     """Write the anonymized .txt file."""
+    settings.output_dir.mkdir(parents=True, exist_ok=True)
     out = settings.output_dir / f"{path.stem}_anonymized.txt"
     out.write_text(text)
     return OutputFile(
         filename=out.name,
         label="Anonymized text (.txt)",
-        download_url=f"/api/files/{out.name}",
+        download_url=f"/api/files/{quote(out.name)}",
     )
 
 
@@ -80,10 +95,11 @@ def _write_pdf_output(path: Path, text: str) -> OutputFile:
             y = _PDF_MARGIN
         page.insert_text((_PDF_MARGIN, y), line[:_PDF_MAX_LINE_WIDTH], fontsize=10)
         y += _PDF_LINE_HEIGHT
+    settings.output_dir.mkdir(parents=True, exist_ok=True)
     out = settings.output_dir / f"{path.stem}_anonymized.pdf"
     doc.save(out)
     return OutputFile(
         filename=out.name,
         label="Anonymized PDF (metadata-free)",
-        download_url=f"/api/files/{out.name}",
+        download_url=f"/api/files/{quote(out.name)}",
     )

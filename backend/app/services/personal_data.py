@@ -36,7 +36,12 @@ def tokenize(text: str, entries: list[str]) -> str:
     """Replace every personal entry with [PERSO n], case-insensitive.
 
     Done BEFORE analysis so the entries are never sent to the NLP engine.
+    Longest entries are replaced first so that overlapping entries
+    ("Jean" / "Jean Dupont") cannot leave a partial residue behind.
     """
-    for index, entry in enumerate(entries, start=1):
-        text = re.sub(re.escape(entry), PERSONAL_TOKEN.format(index), text, flags=re.IGNORECASE)
+    order = sorted(range(len(entries)), key=lambda i: len(entries[i]), reverse=True)
+    for i in order:
+        text = re.sub(
+            re.escape(entries[i]), PERSONAL_TOKEN.format(i + 1), text, flags=re.IGNORECASE
+        )
     return text

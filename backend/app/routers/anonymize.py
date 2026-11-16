@@ -1,6 +1,6 @@
 """Anonymization, redaction and download endpoints."""
 
-from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -8,28 +8,27 @@ from fastapi.responses import FileResponse
 from app.core.config import settings
 from app.schemas.anonymize import AnonymizationResult, OutputFile, RedactionResult
 from app.services import anonymizer, image_redactor
+from app.services.uploads import IMAGE_SUFFIXES, save_upload
 
 router = APIRouter(prefix="/api", tags=["anonymize"])
 
-_ALLOWED_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg"}
-_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg"}
+# Only anonymized/redacted outputs may be served back
+_OUTPUT_SUFFIXES = {".pdf", ".txt", ".png"}
 
 
 @router.post("/anonymize", response_model=AnonymizationResult)
 async def anonymize(file: UploadFile = File(...)) -> AnonymizationResult:
     """Text pipeline: OCR if needed, Presidio anonymization, metadata-free outputs."""
-    path = await _save_upload(file)
-    try:
-        return anonymizer.anonymize_document(path)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    path = await save_upload(file)
+    # ValueError (no text, guardrail failure, ...) -> 422 via the global handler
+    return anonymizer.anonymize_document(path)
 
 
 @router.post("/redact", response_model=RedactionResult)
 async def redact(file: UploadFile = File(...)) -> RedactionResult:
     """Irreversible black redaction of sensitive zones on an image."""
-    path = await _save_upload(file)
-    if path.suffix.lower() not in _IMAGE_SUFFIXES:
+    path = await save_upload(file)
+    if path.suffix.lower() not in IMAGE_SUFFIXES:
         raise HTTPException(status_code=422, detail="Redaction only supports images")
     output, zone_count = image_redactor.redact_image(path)
     return RedactionResult(
@@ -37,7 +36,7 @@ async def redact(file: UploadFile = File(...)) -> RedactionResult:
         output_file=OutputFile(
             filename=output.name,
             label="Redacted image (metadata-free PNG)",
-            download_url=f"/api/files/{output.name}",
+            download_url=f"/api/files/{quote(output.name)}",
         ),
         redacted_zone_count=zone_count,
     )
@@ -45,18 +44,19 @@ async def redact(file: UploadFile = File(...)) -> RedactionResult:
 
 @router.get("/files/{filename}")
 async def download(filename: str) -> FileResponse:
-    """Download an anonymized output file."""
-    path = settings.output_dir / filename
-    if not path.is_file():
+    """Download an anonymized output file, strictly confined to output/.
+
+    The path is resolved and checked to stay inside output/ (defense in
+    depth on top of the router: a "../perso.txt" must never be served), the
+    suffix is allowlisted, and Content-Disposition: attachment is set so the
+    file is never rendered inline by the browser.
+    """
+    output_root = settings.output_dir.resolve()
+    path = (output_root / filename).resolve()
+    if (
+        not path.is_relative_to(output_root)
+        or path.suffix.lower() not in _OUTPUT_SUFFIXES
+        or not path.is_file()
+    ):
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(path)
-
-
-async def _save_upload(file: UploadFile) -> Path:
-    """Store the upload in the local uploads directory and return its path."""
-    suffix = Path(file.filename or "").suffix.lower()
-    if suffix not in _ALLOWED_SUFFIXES:
-        raise HTTPException(status_code=422, detail=f"Unsupported file type: {suffix or 'unknown'}")
-    path = settings.upload_dir / Path(file.filename).name
-    path.write_bytes(await file.read())
-    return path
+    return FileResponse(path, filename=path.name)

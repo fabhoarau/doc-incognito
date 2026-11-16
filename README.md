@@ -100,7 +100,16 @@ CLI - irreversible image redaction:
 
 All settings live in backend/app/core/config.py (override with ANON_
 prefixed environment variables): language, spaCy model, Presidio score
-threshold, paths.
+threshold, paths, max upload size (ANON_MAX_UPLOAD_BYTES, default 50 MB).
+
+## Security hardening
+
+- `GET /api/files/{name}` is strictly confined to `output/` (path resolved and
+  checked, suffix allowlist, served as attachment) - traversal attempts 404.
+- Uploads are validated (PDF/PNG/JPEG only, size-capped) and stored under a
+  sanitized file name; domain errors return 422, never a raw 500.
+- If the guardrail detects a surviving personal entry, no output file is
+  written and the leaked values are masked in the API response and CLI output.
 
 ## Security notes
 

@@ -42,6 +42,7 @@ describe('App', () => {
     expect(screen.getByRole('tab', { name: 'Mes données personnelles' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Métadonnées' })).toBeInTheDocument()
     expect(screen.getByText('Hors ligne · 100 % local')).toBeInTheDocument()
+    expect(document.documentElement.lang).toBe('fr')
   })
 
   it('Anonymize tab: empty state explains the two actions', () => {
