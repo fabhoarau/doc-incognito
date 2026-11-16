@@ -46,28 +46,19 @@ def anonymize_document(path: Path) -> AnonymizationResult:
     # survived, no downloadable file is produced and the leak values are
     # masked (never sent in clear in the API response).
     leaks = guardrail.find_leaks(anonymized, entries)
-    if leaks:
-        return AnonymizationResult(
-            input_name=path.name,
-            extraction_mode=mode,
-            total_replacements=len(analyzer_results),
-            replacements=replacements,
-            output_files=[],
-            guardrail_passed=False,
-            leaks=[guardrail.mask_leak(leak) for leak in leaks],
-        )
-
-    output_files = [_write_text_output(path, anonymized)]
-    if path.suffix.lower() == ".pdf":
-        output_files.append(_write_pdf_output(path, anonymized))
+    output_files: list[OutputFile] = []
+    if not leaks:
+        output_files.append(_write_text_output(path, anonymized))
+        if path.suffix.lower() == ".pdf":
+            output_files.append(_write_pdf_output(path, anonymized))
     return AnonymizationResult(
         input_name=path.name,
         extraction_mode=mode,
         total_replacements=len(analyzer_results),
         replacements=replacements,
         output_files=output_files,
-        guardrail_passed=True,
-        leaks=[],
+        guardrail_passed=not leaks,
+        leaks=[guardrail.mask_leak(leak) for leak in leaks],
     )
 
 

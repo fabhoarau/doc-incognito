@@ -51,6 +51,8 @@ export default function Dropzone({ onFile, file }: Props) {
         )}
         <p className="muted small">{t.anonymize.dropHint}</p>
       </div>
+      {/* Visually hidden but kept in the DOM: stays accessible and tests
+          query input[type="file"] directly. */}
       <input
         ref={inputRef}
         type="file"

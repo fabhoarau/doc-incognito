@@ -1,14 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import App from './App'
 import { I18nProvider } from './i18n'
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
+import { mockFetch } from './test/utils'
 
 function renderApp() {
   return render(
@@ -18,13 +12,39 @@ function renderApp() {
   )
 }
 
+const ANONYMIZE_SUCCESS = {
+  input_name: 'doc.pdf',
+  extraction_mode: 'pdf-text',
+  total_replacements: 43,
+  replacements: [{ entity_type: 'PERSON', count: 4 }],
+  output_files: [
+    {
+      filename: 'doc_anonymized.txt',
+      label: 'Anonymized text (.txt)',
+      download_url: '/api/files/doc_anonymized.txt',
+    },
+    {
+      filename: 'doc_anonymized.pdf',
+      label: 'Anonymized PDF (metadata-free)',
+      download_url: '/api/files/doc_anonymized.pdf',
+    },
+  ],
+  guardrail_passed: true,
+  leaks: [],
+}
+
+const ANONYMIZE_GUARDRAIL_FAILURE = {
+  ...ANONYMIZE_SUCCESS,
+  total_replacements: 2,
+  replacements: [],
+  output_files: [],
+  guardrail_passed: false,
+  leaks: ['Ma…'],
+}
+
 beforeEach(() => {
-  vi.unstubAllGlobals()
   localStorage.setItem('doc-incognito-locale', 'en')
-  vi.stubGlobal(
-    'fetch',
-    vi.fn().mockResolvedValue(jsonResponse({ content: 'TEST LINE\n' })),
-  )
+  mockFetch('', { content: 'TEST LINE\n' })
 })
 
 describe('App', () => {
@@ -84,35 +104,7 @@ describe('App', () => {
   })
 
   it('result card (PDF success): ready badge, PDF as primary CTA, details collapsed, no raw filename in the heading', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockImplementation((url: string) =>
-        Promise.resolve(
-          String(url).includes('/api/anonymize')
-            ? jsonResponse({
-                input_name: 'doc.pdf',
-                extraction_mode: 'pdf-text',
-                total_replacements: 43,
-                replacements: [{ entity_type: 'PERSON', count: 4 }],
-                output_files: [
-                  {
-                    filename: 'doc_anonymized.txt',
-                    label: 'Anonymized text (.txt)',
-                    download_url: '/api/files/doc_anonymized.txt',
-                  },
-                  {
-                    filename: 'doc_anonymized.pdf',
-                    label: 'Anonymized PDF (metadata-free)',
-                    download_url: '/api/files/doc_anonymized.pdf',
-                  },
-                ],
-                guardrail_passed: true,
-                leaks: [],
-              })
-            : jsonResponse({ content: '' }),
-        ),
-      ),
-    )
+    mockFetch('/api/anonymize', ANONYMIZE_SUCCESS)
     renderApp()
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(fileInput, { target: { files: [new File(['x'], 'doc.pdf')] } })
@@ -132,30 +124,7 @@ describe('App', () => {
   })
 
   it('result card (guardrail failure): alert shown, leak values never in the DOM, no download CTA', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockImplementation((url: string) =>
-        Promise.resolve(
-          String(url).includes('/api/anonymize')
-            ? jsonResponse({
-                input_name: 'doc.pdf',
-                extraction_mode: 'pdf-text',
-                total_replacements: 2,
-                replacements: [],
-                output_files: [
-                  {
-                    filename: 'doc_anonymized.txt',
-                    label: 'Anonymized text (.txt)',
-                    download_url: '/api/files/doc_anonymized.txt',
-                  },
-                ],
-                guardrail_passed: false,
-                leaks: ['Marie Dupont'],
-              })
-            : jsonResponse({ content: '' }),
-        ),
-      ),
-    )
+    mockFetch('/api/anonymize', ANONYMIZE_GUARDRAIL_FAILURE)
     renderApp()
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(fileInput, { target: { files: [new File(['x'], 'doc.pdf')] } })
@@ -163,6 +132,8 @@ describe('App', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Leak check FAILED')
+    // the raw leak value must never be rendered (mock sends a masked one, but
+    // the frontend masks again defensively - see maskLeak)
     expect(screen.queryByText(/Marie Dupont/)).toBeNull()
     expect(screen.queryByRole('link', { name: /Download/ })).toBeNull()
   })

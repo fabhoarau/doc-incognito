@@ -1,12 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { anonymizeDocument, getPersonalData, savePersonalData } from './api'
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
+import { jsonResponse } from './test/utils'
 
 beforeEach(() => {
   vi.unstubAllGlobals()

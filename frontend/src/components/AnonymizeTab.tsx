@@ -6,6 +6,8 @@ import Dropzone from './Dropzone'
 
 const IMAGE_RE = /\.(png|jpe?g)$/i
 
+// Defense in depth: the API already masks leaks server-side; never render a
+// personal value in clear, even if the contract changes one day.
 function maskLeak(leak: string): string {
   return leak.length <= 2 ? '••' : `${leak.slice(0, 2)}…`
 }
