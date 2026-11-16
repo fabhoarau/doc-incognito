@@ -2,8 +2,14 @@
 
 <img src="frontend/public/favicon.svg" width="96" alt="doc-incognito logo" />
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-31%20pytest%20%2B%2017%20vitest-green.svg)]()
+
 Local-first document anonymizer: redact PDFs and images before sending them
 to AI. Everything runs on your machine - no network calls, nothing leaves.
+
+*Keywords: privacy, PII redaction, PDF anonymization, image redaction, OCR,
+Presidio, spaCy, local-first, self-hosted, offline, GDPR, French documents.*
 
 ## What it does
 
