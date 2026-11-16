@@ -58,7 +58,7 @@ describe('App', () => {
   it('shows the logo next to the title in the header', () => {
     renderApp()
     const logo = document.querySelector('img.brand-logo')
-    expect(logo).toHaveAttribute('src', '/favicon.svg')
+    expect(logo).toHaveAttribute('src', '/logo.svg')
     expect(screen.getByRole('heading', { name: 'doc-incognito' })).toBeInTheDocument()
   })
 

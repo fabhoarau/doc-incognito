@@ -1,18 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- brand tile: contrasts with the dark page background -->
-  <rect width="512" height="512" rx="110" fill="#2f66d0"/>
+  <!-- dark tile with subtle border: blends into the page -->
+  <rect width="512" height="512" rx="110" fill="#1b2027" stroke="#2a3038" stroke-width="6"/>
 
-  <!-- document with folded corner -->
   <path d="M156 140 h164 l40 40 v212 a16 16 0 0 1 -16 16 h-188 a16 16 0 0 1 -16 -16 v-236 a16 16 0 0 1 16 -16 z" fill="#f4f6fa"/>
   <path d="M320 140 l40 40 h-28 a12 12 0 0 1 -12 -12 z" fill="#c3ccd8"/>
 
-  <!-- text lines, one thick redaction bar -->
   <rect x="184" y="248" width="144" height="16" rx="8" fill="#c3ccd8"/>
   <rect x="184" y="280" width="144" height="16" rx="8" fill="#c3ccd8"/>
   <rect x="184" y="312" width="96" height="26" rx="7" fill="#14171c"/>
   <rect x="184" y="354" width="110" height="16" rx="8" fill="#c3ccd8"/>
 
-  <!-- incognito glasses: thick lenses, readable even at 32px -->
   <rect x="142" y="202" width="40" height="16" rx="8" fill="#14171c"/>
   <rect x="330" y="202" width="40" height="16" rx="8" fill="#14171c"/>
   <rect x="176" y="184" width="90" height="70" rx="22" fill="#14171c"/>

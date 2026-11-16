@@ -21,7 +21,7 @@ export default function App() {
       <header>
         <div className="header-row">
           <div className="brand">
-            <img src="/favicon.svg" alt="" className="brand-logo" />
+            <img src="/logo.svg" alt="" className="brand-logo" />
             <div>
               <h1>doc-incognito</h1>
               <p className="subtitle">{t.header.subtitle}</p>
