@@ -18,6 +18,14 @@ runs last and fails loudly if any personal entry survives.
 
 ## Run
 
+Docker (recommended, zero host install - single container, UI+API on 8000):
+
+    docker compose up --build        # publishes 127.0.0.1:8000 only
+    # perso.txt is bind-mounted read-only at /app/perso.txt, NEVER baked into the image
+    # Dockerfile: node:22-alpine builds frontend/dist, python:3.12-slim-bookworm runs
+    #   the API + apt tesseract-ocr(-fra)/ghostscript/poppler-utils + pip ocrmypdf + fr_core_news_lg
+
+
     # backend, port 8000
     cd backend && ./venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
     # frontend, port 5173
@@ -30,8 +38,8 @@ fall back to `nohup <cmd> > /tmp/doc-incognito-<name>.log 2>&1 & disown`.
 ## Test
 
     cd backend && ./venv/bin/pip install -r requirements-dev.txt
-    cd backend && ./venv/bin/python -m pytest tests -q     # 31 tests (incl. security)
-    cd frontend && npm test                                 # vitest, 16 tests
+    cd backend && ./venv/bin/python -m pytest tests -q     # 37 tests (incl. security)
+    cd frontend && npm test                                 # vitest, 17 tests
     cd frontend && npm run build                            # tsc --noEmit + vite build
 
 ## Layout

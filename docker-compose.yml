@@ -1,0 +1,19 @@
+# doc-incognito - local-only container.
+# The port is published on the host loopback only: the app is reachable from
+# this machine, never from the network.
+#
+#   cp perso.txt.example perso.txt   # first run only - fill in your data
+#   docker compose up --build
+#   open http://127.0.0.1:8000
+services:
+  doc-incognito:
+    build: .
+    image: doc-incognito:local
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      # perso.txt never enters the image; it is mounted read-only.
+      - ./perso.txt:/app/perso.txt:ro
+      - ./uploads:/app/uploads
+      - ./output:/app/output
+    restart: unless-stopped

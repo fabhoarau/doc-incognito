@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     personal_data_file: Path = BASE_DIR / "perso.txt"
     upload_dir: Path = BASE_DIR / "uploads"
     output_dir: Path = BASE_DIR / "output"
+    # Built frontend (npm run build). When present, the API also serves the UI
+    # at / (single-origin, used by the Docker image). Dev mode keeps using the
+    # Vite server on 5173 with its /api proxy.
+    frontend_dist: Path = BASE_DIR / "frontend" / "dist"
 
     model_config = {"env_prefix": "ANON_"}
 

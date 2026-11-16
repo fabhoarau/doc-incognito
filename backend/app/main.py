@@ -3,6 +3,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from PIL import UnidentifiedImageError
 
 from app.core.config import settings
@@ -40,6 +41,15 @@ def create_app() -> FastAPI:
     app.include_router(anonymize.router)
     app.include_router(personal_data.router)
     app.include_router(metadata.router)
+    # Serve the built UI when available (Docker image). Mounted LAST so /api
+    # routes always win. Tabs are component state (no client-side routes), so
+    # html=True is enough - no SPA fallback needed.
+    if settings.frontend_dist.is_dir():
+        app.mount(
+            "/",
+            StaticFiles(directory=settings.frontend_dist, html=True),
+            name="frontend",
+        )
     return app
 
 

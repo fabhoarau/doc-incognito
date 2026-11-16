@@ -3,7 +3,7 @@
 <img src="frontend/public/favicon.svg" width="96" alt="doc-incognito logo" />
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-31%20pytest%20%2B%2017%20vitest-green.svg)]()
+[![Tests](https://img.shields.io/badge/tests-37%20pytest%20%2B%2017%20vitest-green.svg)]()
 
 Local-first document anonymizer: redact PDFs and images before sending them
 to AI. Everything runs on your machine - no network calls, nothing leaves.
@@ -72,6 +72,32 @@ winget install Python.Python.3.12 UB-Mannheim.TesseractOCR ArtifexSoftware.Ghost
 Verify the French model on any OS with `tesseract --list-langs` — it must list `fra`.
 
 ## Installation
+
+### Docker (recommended - zero host install)
+
+Everything (Python, tesseract+french, ghostscript, ocrmypdf, spaCy model, built
+UI) ships in one image. The container publishes on your loopback only, and
+`perso.txt` is mounted read-only - it is never baked into the image.
+
+    git clone https://github.com/fabhoarau/doc-incognito.git
+    cd doc-incognito
+    cp perso.txt.example perso.txt     # fill in your personal data
+    docker compose up --build
+    open http://127.0.0.1:8000         # UI + API on the same origin
+
+Equivalent `docker run`:
+
+    docker build -t doc-incognito .
+    docker run --rm -p 127.0.0.1:8000:8000 \
+      -v "$PWD/perso.txt:/app/perso.txt:ro" \
+      -v "$PWD/uploads:/app/uploads" -v "$PWD/output:/app/output" \
+      doc-incognito
+
+(Windows PowerShell: `-v "${PWD}\perso.txt:/app/perso.txt:ro"`.)
+Anonymized files land in `./output/` on your host. The image is large
+(~2.7 GB) because of the spaCy `fr_core_news_lg` model.
+
+### Native (macOS / Linux / Windows)
 
 One-shot setup (creates backend/venv with a Python 3.11-3.14, installs deps,
 downloads the spaCy model, creates perso.txt from the template):
