@@ -48,13 +48,28 @@ Presidio, spaCy, local-first, self-hosted, offline, GDPR, French documents.*
 ## Requirements
 
 - Python 3.11-3.14 (presidio 2.2.366 does not support Python 3.15+)
-- Homebrew: tesseract with French language data, and ocrmypdf (both installed via Homebrew, not pip)
+- tesseract **with the French language data** (`fra`) and ocrmypdf + ghostscript
+  (installed system-wide, not via pip - OCR runs with `-l fra`)
+
+Per OS:
 
 ```
-brew install tesseract tesseract-lang ocrmypdf
+# macOS (Homebrew)
+brew install tesseract tesseract-lang ocrmypdf ghostscript
+# tesseract-lang installs all language models, incl. fra.traineddata, into
+# /opt/homebrew/share/tessdata/ (Apple Silicon; /usr/local/... on Intel).
+
+# Linux (Debian/Ubuntu)
+sudo apt install tesseract-ocr tesseract-ocr-fra ocrmypdf ghostscript
+
+# Windows (PowerShell, winget)
+winget install Python.Python.3.12 UB-Mannheim.TesseractOCR ArtifexSoftware.Ghostscript
+# add the "fra" language in the Tesseract installer, or drop fra.traineddata into
+#   C:\Program Files\Tesseract-OCR\tessdata\
+# ocrmypdf on Windows: pip install ocrmypdf (done by setup.ps1)
 ```
 
-`tesseract-lang` installs all language models, including `fra.traineddata`, into `/opt/homebrew/share/tessdata/` (Apple Silicon; `/usr/local/...` on Intel). Verify with `tesseract --list-langs` — it must list `fra`, because OCR runs with `-l fra`. If `fra` is missing, copy `fra.traineddata` into that tessdata directory manually.
+Verify the French model on any OS with `tesseract --list-langs` — it must list `fra`.
 
 ## Installation
 
@@ -63,7 +78,8 @@ downloads the spaCy model, creates perso.txt from the template):
 
     git clone https://github.com/fabhoarau/doc-incognito.git
     cd doc-incognito
-    ./setup.sh
+    ./setup.sh                                   # macOS / Linux (bash)
+    powershell -ExecutionPolicy Bypass -File .\setup.ps1   # Windows
 
 Or manually:
 

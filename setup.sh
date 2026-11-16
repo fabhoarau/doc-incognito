@@ -14,6 +14,20 @@ if [ -z "$PY" ]; then
 fi
 echo "Using $($PY --version)"
 
+# OCR tools (installed system-wide, not via pip - see README > Requirements)
+for tool in tesseract ocrmypdf; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "WARNING: '$tool' not found on PATH - OCR will fail."
+    case "$(uname -s)" in
+      Darwin) echo "  macOS:        brew install tesseract tesseract-lang ocrmypdf" ;;
+      Linux)  echo "  Debian/Ubuntu: sudo apt install tesseract-ocr tesseract-ocr-fra ocrmypdf ghostscript" ;;
+    esac
+  fi
+done
+if command -v tesseract >/dev/null 2>&1 && ! tesseract --list-langs 2>/dev/null | grep -q '^fra$'; then
+  echo "WARNING: tesseract has no 'fra' language - OCR runs with -l fra (see README)."
+fi
+
 cd backend
 rm -rf venv
 "$PY" -m venv venv

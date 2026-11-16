@@ -41,3 +41,29 @@ class Settings(BaseSettings):
 # No filesystem side effect at import time: writers create the dirs on demand
 # (keeps tests and imports clean - see conftest.py).
 settings = Settings()
+
+
+def configure_tesseract_cmd() -> None:
+    """Point pytesseract at a known Windows install when tesseract is not on PATH.
+
+    macOS/Linux: tesseract is expected on PATH (brew / apt). Windows: fall
+    back to the standard UB Mannheim installer locations.
+    """
+    import shutil
+    import sys
+
+    if shutil.which("tesseract"):
+        return
+    if sys.platform == "win32":
+        import pytesseract
+
+        for candidate in (
+            Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
+            Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
+        ):
+            if candidate.is_file():
+                pytesseract.pytesseract.tesseract_cmd = str(candidate)
+                return
+
+
+configure_tesseract_cmd()
