@@ -40,14 +40,13 @@ to AI. Everything runs on your machine - no network calls, nothing leaves.
 ## Requirements
 
 - Python 3.11-3.14 (presidio 2.2.366 does not support Python 3.15+)
-- Homebrew: tesseract (with French language data) and ocrmypdf
-  (installed via Homebrew, not pip)
+- Homebrew: tesseract with French language data, and ocrmypdf (both installed via Homebrew, not pip)
 
-    brew install tesseract tesseract-lang ocrmypdf
-    # tesseract-lang installs all language models, including fra.traineddata,
-    # into /opt/homebrew/share/tessdata/ (Apple Silicon; /usr/local/... on Intel).
-    # Verify with: tesseract --list-langs   (must list "fra" - OCR runs with -l fra)
-    # Fallback if fra is missing: copy fra.traineddata into that tessdata dir.
+```
+brew install tesseract tesseract-lang ocrmypdf
+```
+
+`tesseract-lang` installs all language models, including `fra.traineddata`, into `/opt/homebrew/share/tessdata/` (Apple Silicon; `/usr/local/...` on Intel). Verify with `tesseract --list-langs` — it must list `fra`, because OCR runs with `-l fra`. If `fra` is missing, copy `fra.traineddata` into that tessdata directory manually.
 
 ## Installation
 
