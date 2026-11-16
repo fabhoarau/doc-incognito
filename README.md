@@ -6,19 +6,22 @@ to AI. Everything runs on your machine - no network calls, nothing leaves.
 ## What it does
 
 - Text pipeline: extract text (native PDF text, OCR for scanned PDFs and
-  images via ocrmypdf/tesseract), replace your personal data with [PERSO n]
-  tokens, then detect and anonymize French PII with Microsoft Presidio.
-  Produces an anonymized .txt and, for PDFs, a rebuilt metadata-free PDF.
+  images via ocrmypdf/tesseract), replace your personal data with [PERSO1],
+  [PERSO2]… tokens (longest entries first), then detect and anonymize French
+  PII with Microsoft Presidio. Produces an anonymized .txt and, for PDFs, a
+  rebuilt metadata-free PDF.
 - Image redaction: irreversible black-rectangle redaction of sensitive zones
   detected by OCR + Presidio, re-saved as a fresh metadata-free PNG.
 - Metadata inspector: report PDF metadata and image EXIF fields, flagging
   potential identity leaks.
 - Guardrail: after anonymization, verifies that none of your personal data
-  entries remain in the output. Fails loudly if anything survived.
+  entries remain in the output. Fails loudly if anything survived: no output
+  file is written and the leaked values are masked.
 
 ## Architecture
 
     doc-incognito/
+    |- AGENTS.md              # project context for AI agents (conventions, invariants)
     |- backend/
     |  |- app/
     |  |  |- core/            # config, French regex patterns, Presidio engine (singleton)
@@ -27,14 +30,16 @@ to AI. Everything runs on your machine - no network calls, nothing leaves.
     |  |  |- routers/         # FastAPI endpoints
     |  |  |- main.py          # FastAPI app factory (127.0.0.1 only)
     |  |- scripts/            # CLI entry points
+    |  |- tests/              # pytest suite (runs on isolated tmp dirs)
     |  |- requirements.txt
-    |- frontend/              # Vite + React + TS web UI (dev server on 5173)
+    |  |- requirements-dev.txt  # + pytest, httpx (tests)
+    |- frontend/              # Vite + React + TS web UI (dev server on 5173, i18n in src/i18n/)
     |- perso.txt.example      # template: copy to perso.txt and fill in your own data
     |- uploads/ output/       # gitignored runtime directories
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.11-3.14 (presidio 2.2.366 does not support Python 3.15+)
 - Homebrew: tesseract (with French language data) and ocrmypdf
   (installed via Homebrew, not pip)
 
@@ -44,15 +49,23 @@ to AI. Everything runs on your machine - no network calls, nothing leaves.
 
 ## Installation
 
+One-shot setup (creates backend/venv with a Python 3.11-3.14, installs deps,
+downloads the spaCy model, creates perso.txt from the template):
+
     git clone https://github.com/fabhoarau/doc-incognito.git
-    cd doc-incognito/backend
+    cd doc-incognito
+    ./setup.sh
+
+Or manually:
+
+    cd backend
     python3 -m venv venv
     source venv/bin/activate
     pip install -r requirements.txt
     python -m spacy download fr_core_news_lg
 
-Copy the personal data template (repo root) and fill it with YOUR data,
-one entry per line. This file is gitignored and never leaves your machine:
+Then fill in your personal data (one entry per line). perso.txt is gitignored
+and never leaves your machine:
 
     cp perso.txt.example perso.txt
 
@@ -76,6 +89,17 @@ The UI is multilingual (English/French, auto-detected from the browser
 language, switchable in the header). To add a language, add a locale file in
 frontend/src/i18n/ and register it in localeCodes.
 
+## CLI
+
+Text pipeline (anonymized .txt + metadata-free PDF), from backend/ with the
+venv active:
+
+    python -m scripts.anonymize_document path/to/statement.pdf
+
+Irreversible image redaction:
+
+    python -m scripts.redact_image path/to/screenshot.png
+
 ## Tests
 
 Backend (pytest, isolated tmp dirs - the real perso.txt is never touched):
@@ -87,14 +111,6 @@ Backend (pytest, isolated tmp dirs - the real perso.txt is never touched):
 Frontend (vitest + Testing Library, API mocked):
 
     cd frontend && npm test
-
-CLI - text pipeline (anonymized .txt + metadata-free PDF):
-
-    python -m scripts.anonymize_document path/to/statement.pdf
-
-CLI - irreversible image redaction:
-
-    python -m scripts.redact_image path/to/screenshot.png
 
 ## Configuration
 
