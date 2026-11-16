@@ -11,17 +11,15 @@ runs last and fails loudly if any personal entry survives.
 ## Stack
 
 - Backend: FastAPI (`backend/app/`), Python 3.11-3.14 ONLY (presidio 2.2.366
-  rejects 3.15+), venv at `backend/venv`, spaCy `fr_core_news_lg`, pymupdf,
-  pytesseract + ocrmypdf/tesseract installed system-wide: brew on macOS,
-  apt in the Docker image / on Linux, winget + `pip install ocrmypdf` on Windows.
-- Frontend: Vite 6 + React 18 + TS (`frontend/`). In Docker the built UI is
-  served by FastAPI itself at / (single origin, port 8000). In native dev the
-  Vite server (5173) proxies `/api` to `http://127.0.0.1:8000`, so the UI uses
-  relative URLs either way.
+  rejects 3.15+), spaCy `fr_core_news_lg`, pymupdf, pytesseract + ocrmypdf.
+  Distribution is DOCKER ONLY: the image (python:3.12-slim-bookworm) bundles
+  tesseract+french, ghostscript, poppler-utils (apt) and ocrmypdf (pip).
+- Frontend: Vite 6 + React 18 + TS (`frontend/`). The built UI is served by
+  FastAPI itself at / (single origin, port 8000) - the Vite dev server is only
+  used by contributors for hot reload (it proxies /api to 127.0.0.1:8000, so
+  the UI uses relative URLs either way).
 
-## Run
-
-Docker (recommended, zero host install - single container, UI+API on 8000):
+## Run (Docker only)
 
     docker compose up --build        # publishes 127.0.0.1:8000 only
     # UI: http://127.0.0.1:8000  |  API docs: http://127.0.0.1:8000/api/docs
@@ -31,30 +29,34 @@ Docker (recommended, zero host install - single container, UI+API on 8000):
     #   ghostscript/poppler-utils + pip ocrmypdf + spacy fr_core_news_lg
     # perso.txt is bind-mounted read-only at /app/perso.txt, NEVER baked into the image
 
-Native dev (two processes):
+## Test (contributors run the suites natively)
 
-    # backend, port 8000
+One-time dev venv bootstrap (OCR tests also need tesseract+`fra`, ghostscript
+and ocrmypdf on the dev machine - brew on macOS, apt on Linux):
+
+    python3 -m venv backend/venv          # Python 3.11-3.14
+    backend/venv/bin/pip install -r backend/requirements.txt -r backend/requirements-dev.txt ocrmypdf
+    backend/venv/bin/python -m spacy download fr_core_news_lg
+
+Then:
+
+    cd backend && ./venv/bin/python -m pytest tests -q     # 35 tests (incl. security)
+    cd frontend && npm install && npm test                  # vitest, 17 tests
+    cd frontend && npm run build                            # tsc --noEmit + vite build
+
+Native dev mode (two processes, hot reload) when hacking on the code:
+
     cd backend && ./venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-    # frontend, port 5173
-    cd frontend && npm install && npm run dev
-    # UI: http://127.0.0.1:5173   |   API docs: http://127.0.0.1:8000/api/docs
+    cd frontend && npm run dev                               # UI on http://127.0.0.1:5173
 
 In sandboxed environments the background-process tool can fail to spawn;
 fall back to `nohup <cmd> > /tmp/doc-incognito-<name>.log 2>&1 & disown`.
-
-## Test
-
-    cd backend && ./venv/bin/pip install -r requirements-dev.txt
-    cd backend && ./venv/bin/python -m pytest tests -q     # 37 tests (incl. security)
-    cd frontend && npm test                                 # vitest, 17 tests
-    cd frontend && npm run build                            # tsc --noEmit + vite build
 
 ## Layout
 
     Dockerfile             multi-stage image (frontend build + python:3.12-slim runtime)
     docker-compose.yml     127.0.0.1:8000 only; perso.txt mounted ro at /app/perso.txt
     .dockerignore          excludes perso.txt, uploads/, output/, venv, node_modules
-    setup.sh / setup.ps1   one-shot native setup (macOS/Linux/Windows)
     backend/app/core/      config (pydantic-settings, ANON_ env prefix), analyzer singleton, French regex patterns
     backend/app/services/  business logic, shared by API and CLI (no duplication)
     backend/app/routers/   /api/anonymize, /api/redact, /api/files, /api/personal-data, /api/metadata/inspect

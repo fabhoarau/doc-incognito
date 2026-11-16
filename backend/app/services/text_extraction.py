@@ -31,7 +31,7 @@ def extract_text(path: Path) -> tuple[str, ExtractionMode]:
 
 
 def _ocr_pdf(path: Path) -> str:
-    """OCR a scanned PDF with ocrmypdf (installed via Homebrew, not pip)."""
+    """OCR a scanned PDF with ocrmypdf (apt/pip in the Docker image; system tool)."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir) / "ocr.pdf"
         try:

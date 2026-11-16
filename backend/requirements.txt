@@ -8,7 +8,7 @@ spacy>=3.7
 pymupdf>=1.24
 pytesseract>=0.3.13
 Pillow>=10.4
-# tesseract is installed system-wide (brew/apt/winget - see README), not pip.
-# ocrmypdf: via Homebrew on macOS, or `pip install ocrmypdf` on Linux/Windows
-# (needs ghostscript + tesseract on PATH).
+# tesseract is a system binary (apt tesseract-ocr in the Docker image), not pip.
+# ocrmypdf is pip-installed in the Docker image (needs ghostscript + tesseract
+# on PATH, both apt-installed there).
 python-multipart>=0.0.18

@@ -3,7 +3,7 @@
 <img src="frontend/public/favicon.svg" width="96" alt="doc-incognito logo" />
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-37%20pytest%20%2B%2017%20vitest-green.svg)]()
+[![Tests](https://img.shields.io/badge/tests-35%20pytest%20%2B%2017%20vitest-green.svg)]()
 
 Local-first document anonymizer: redact PDFs and images before sending them
 to AI. Everything runs on your machine - no network calls, nothing leaves.
@@ -33,7 +33,6 @@ Presidio, spaCy, local-first, self-hosted, offline, GDPR, French documents.*
     |- Dockerfile             # multi-stage image: frontend build + backend runtime
     |- docker-compose.yml     # publishes 127.0.0.1:8000 only, mounts perso.txt read-only
     |- .dockerignore          # keeps perso.txt, uploads/, output/, venv out of the image
-    |- setup.sh / setup.ps1   # one-shot native setup (macOS/Linux/Windows)
     |- LICENSE                # MIT
     |- backend/
     |  |- app/
@@ -52,37 +51,11 @@ Presidio, spaCy, local-first, self-hosted, offline, GDPR, French documents.*
 
 ## Requirements
 
-**Docker install: none** - the image bundles everything below.
+- Docker Desktop (macOS / Windows) or Docker Engine + Compose v2 (Linux).
+  That is all: the image bundles Python 3.12, tesseract **with the French
+  language data** (`fra`), ghostscript, ocrmypdf and the spaCy model.
 
-**Native install only:**
-
-- Python 3.11-3.14 (presidio 2.2.366 does not support Python 3.15+)
-- tesseract **with the French language data** (`fra`) and ocrmypdf + ghostscript
-  (installed system-wide, not via pip - OCR runs with `-l fra`)
-
-Per OS:
-
-```
-# macOS (Homebrew)
-brew install tesseract tesseract-lang ocrmypdf ghostscript
-# tesseract-lang installs all language models, incl. fra.traineddata, into
-# /opt/homebrew/share/tessdata/ (Apple Silicon; /usr/local/... on Intel).
-
-# Linux (Debian/Ubuntu)
-sudo apt install tesseract-ocr tesseract-ocr-fra ocrmypdf ghostscript
-
-# Windows (PowerShell, winget)
-winget install Python.Python.3.12 UB-Mannheim.TesseractOCR ArtifexSoftware.Ghostscript
-# add the "fra" language in the Tesseract installer, or drop fra.traineddata into
-#   C:\Program Files\Tesseract-OCR\tessdata\
-# ocrmypdf on Windows: pip install ocrmypdf (done by setup.ps1)
-```
-
-Verify the French model on any OS with `tesseract --list-langs` — it must list `fra`.
-
-## Installation
-
-### Docker (recommended - zero host install)
+## Installation (Docker only)
 
 Everything (Python, tesseract+french, ghostscript, ocrmypdf, spaCy model, built
 UI) ships in one image. The container publishes on your loopback only, and
@@ -90,7 +63,7 @@ UI) ships in one image. The container publishes on your loopback only, and
 
     git clone https://github.com/fabhoarau/doc-incognito.git
     cd doc-incognito
-    cp perso.txt.example perso.txt     # fill in your personal data
+    cp perso.txt.example perso.txt     # fill in your personal data, one entry per line
     docker compose up --build
     open http://127.0.0.1:8000         # UI + API on the same origin
 
@@ -104,51 +77,16 @@ Equivalent `docker run`:
 
 (Windows PowerShell: `-v "${PWD}\perso.txt:/app/perso.txt:ro"`.)
 Anonymized files land in `./output/` on your host. The image is large
-(~2.7 GB) because of the spaCy `fr_core_news_lg` model.
-
-### Native (macOS / Linux / Windows)
-
-One-shot setup (creates backend/venv with a Python 3.11-3.14, installs deps,
-downloads the spaCy model, creates perso.txt from the template):
-
-    git clone https://github.com/fabhoarau/doc-incognito.git
-    cd doc-incognito
-    ./setup.sh                                   # macOS / Linux (bash)
-    powershell -ExecutionPolicy Bypass -File .\setup.ps1   # Windows
-
-Or manually:
-
-    cd backend
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    python -m spacy download fr_core_news_lg
-
-Then fill in your personal data (one entry per line). perso.txt is gitignored
-and never leaves your machine:
-
-    cp perso.txt.example perso.txt
+(~2.7 GB) because of the spaCy `fr_core_news_lg` model. perso.txt is
+gitignored and never leaves your machine.
 
 ## Usage
 
-### Docker (single origin)
-
 With `docker compose up --build` (see Installation), everything is served by
-one process on http://127.0.0.1:8000:
+one process:
 
 - Web UI: http://127.0.0.1:8000
 - Interactive API docs: http://127.0.0.1:8000/api/docs
-
-### Native development (two processes)
-
-API (from backend/, venv active):
-
-    uvicorn app.main:app --reload        # http://127.0.0.1:8000/api/docs
-
-Web UI (from frontend/):
-
-    npm install
-    npm run dev                           # http://127.0.0.1:5173, proxies /api to :8000
 
 The UI has three tabs: Anonymize (text pipeline + image redaction), My
 personal data (perso.txt editor), Metadata check. It is multilingual
@@ -158,28 +96,32 @@ register it in localeCodes.
 
 ## CLI
 
-Native (from backend/, venv active) - text pipeline (anonymized .txt +
-metadata-free PDF) and irreversible image redaction:
-
-    python -m scripts.anonymize_document path/to/statement.pdf
-    python -m scripts.redact_image path/to/screenshot.png
-
-Inside the Docker container (files under /app/uploads, results in /app/output,
-i.e. ./output on your host):
+Inside the running container (files under /app/uploads, results land in
+/app/output = ./output on your host):
 
     docker compose exec doc-incognito python -m scripts.anonymize_document /app/uploads/statement.pdf
+    docker compose exec doc-incognito python -m scripts.redact_image /app/uploads/screenshot.png
 
 ## Tests
 
+Contributors run the suites natively (the app itself always runs in Docker).
+Bootstrap a dev venv once (Python 3.11-3.14 - presidio rejects 3.15+; the OCR
+tests also need tesseract with `fra` + ghostscript + ocrmypdf on the dev
+machine: `brew install tesseract tesseract-lang ocrmypdf ghostscript` on
+macOS, `sudo apt install tesseract-ocr tesseract-ocr-fra ocrmypdf ghostscript`
+on Linux):
+
+    python3 -m venv backend/venv
+    backend/venv/bin/pip install -r backend/requirements.txt -r backend/requirements-dev.txt ocrmypdf
+    backend/venv/bin/python -m spacy download fr_core_news_lg
+
 Backend (pytest, isolated tmp dirs - the real perso.txt is never touched):
 
-    cd backend
-    pip install -r requirements-dev.txt
-    python -m pytest tests -q
+    cd backend && ./venv/bin/python -m pytest tests -q
 
 Frontend (vitest + Testing Library, API mocked):
 
-    cd frontend && npm test
+    cd frontend && npm install && npm test && npm run build
 
 ## Configuration
 
