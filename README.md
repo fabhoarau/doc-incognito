@@ -43,9 +43,11 @@ to AI. Everything runs on your machine - no network calls, nothing leaves.
 - Homebrew: tesseract (with French language data) and ocrmypdf
   (installed via Homebrew, not pip)
 
-    brew install tesseract ocrmypdf
-    # French language data for tesseract (if not already present):
-    # copy fra.traineddata into /opt/homebrew/share/tessdata/
+    brew install tesseract tesseract-lang ocrmypdf
+    # tesseract-lang installs all language models, including fra.traineddata,
+    # into /opt/homebrew/share/tessdata/ (Apple Silicon; /usr/local/... on Intel).
+    # Verify with: tesseract --list-langs   (must list "fra" - OCR runs with -l fra)
+    # Fallback if fra is missing: copy fra.traineddata into that tessdata dir.
 
 ## Installation
 
