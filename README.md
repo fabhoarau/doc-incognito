@@ -30,6 +30,11 @@ Presidio, spaCy, local-first, self-hosted, offline, GDPR, French documents.*
 
     doc-incognito/
     |- AGENTS.md              # project context for AI agents (conventions, invariants)
+    |- Dockerfile             # multi-stage image: frontend build + backend runtime
+    |- docker-compose.yml     # publishes 127.0.0.1:8000 only, mounts perso.txt read-only
+    |- .dockerignore          # keeps perso.txt, uploads/, output/, venv out of the image
+    |- setup.sh / setup.ps1   # one-shot native setup (macOS/Linux/Windows)
+    |- LICENSE                # MIT
     |- backend/
     |  |- app/
     |  |  |- core/            # config, French regex patterns, Presidio engine (singleton)
@@ -46,6 +51,10 @@ Presidio, spaCy, local-first, self-hosted, offline, GDPR, French documents.*
     |- uploads/ output/       # gitignored runtime directories
 
 ## Requirements
+
+**Docker install: none** - the image bundles everything below.
+
+**Native install only:**
 
 - Python 3.11-3.14 (presidio 2.2.366 does not support Python 3.15+)
 - tesseract **with the French language data** (`fra`) and ocrmypdf + ghostscript
@@ -122,34 +131,43 @@ and never leaves your machine:
 
 ## Usage
 
-Start the local API (from backend/, venv active):
+### Docker (single origin)
 
-    uvicorn app.main:app --reload
+With `docker compose up --build` (see Installation), everything is served by
+one process on http://127.0.0.1:8000:
 
-Interactive docs: http://127.0.0.1:8000/api/docs
+- Web UI: http://127.0.0.1:8000
+- Interactive API docs: http://127.0.0.1:8000/api/docs
+
+### Native development (two processes)
+
+API (from backend/, venv active):
+
+    uvicorn app.main:app --reload        # http://127.0.0.1:8000/api/docs
 
 Web UI (from frontend/):
 
     npm install
-    npm run dev
+    npm run dev                           # http://127.0.0.1:5173, proxies /api to :8000
 
-Then open http://127.0.0.1:5173 - the Vite dev server proxies /api to the
-backend on 127.0.0.1:8000. Three tabs: Anonymize (text pipeline + image
-redaction), My personal data (perso.txt editor), Metadata check.
-The UI is multilingual (English/French, auto-detected from the browser
-language, switchable in the header). To add a language, add a locale file in
-frontend/src/i18n/ and register it in localeCodes.
+The UI has three tabs: Anonymize (text pipeline + image redaction), My
+personal data (perso.txt editor), Metadata check. It is multilingual
+(English/French, auto-detected from the browser language, switchable in the
+header). To add a language, add a locale file in frontend/src/i18n/ and
+register it in localeCodes.
 
 ## CLI
 
-Text pipeline (anonymized .txt + metadata-free PDF), from backend/ with the
-venv active:
+Native (from backend/, venv active) - text pipeline (anonymized .txt +
+metadata-free PDF) and irreversible image redaction:
 
     python -m scripts.anonymize_document path/to/statement.pdf
-
-Irreversible image redaction:
-
     python -m scripts.redact_image path/to/screenshot.png
+
+Inside the Docker container (files under /app/uploads, results in /app/output,
+i.e. ./output on your host):
+
+    docker compose exec doc-incognito python -m scripts.anonymize_document /app/uploads/statement.pdf
 
 ## Tests
 
@@ -167,7 +185,9 @@ Frontend (vitest + Testing Library, API mocked):
 
 All settings live in backend/app/core/config.py (override with ANON_
 prefixed environment variables): language, spaCy model, Presidio score
-threshold, paths, max upload size (ANON_MAX_UPLOAD_BYTES, default 50 MB).
+threshold, paths, max upload size (ANON_MAX_UPLOAD_BYTES, default 50 MB),
+and ANON_FRONTEND_DIST (built UI served at / when the directory exists -
+default frontend/dist, used by the Docker image).
 
 ## Security hardening
 
@@ -180,7 +200,10 @@ threshold, paths, max upload size (ANON_MAX_UPLOAD_BYTES, default 50 MB).
 
 ## Security notes
 
-- The server binds to 127.0.0.1 only; the tool makes no outbound network call.
+- Native: the server binds to 127.0.0.1 only. Docker: uvicorn binds 0.0.0.0
+  *inside the container* (required for port forwarding), but compose publishes
+  `127.0.0.1:8000:8000` - never change that to `0.0.0.0:...`. Either way the
+  tool makes no outbound network call and is unreachable from the network.
 - perso.txt is gitignored: it must contain your real data only locally.
 - Rebuilt PDFs are written with empty metadata; redacted images are fresh
   RGB PNGs with zero EXIF.

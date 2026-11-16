@@ -12,19 +12,26 @@ runs last and fails loudly if any personal entry survives.
 
 - Backend: FastAPI (`backend/app/`), Python 3.11-3.14 ONLY (presidio 2.2.366
   rejects 3.15+), venv at `backend/venv`, spaCy `fr_core_news_lg`, pymupdf,
-  pytesseract + ocrmypdf/tesseract via Homebrew.
-- Frontend: Vite 6 + React 18 + TS (`frontend/`). The dev server proxies `/api`
-  to `http://127.0.0.1:8000`, so the UI uses relative URLs.
+  pytesseract + ocrmypdf/tesseract installed system-wide: brew on macOS,
+  apt in the Docker image / on Linux, winget + `pip install ocrmypdf` on Windows.
+- Frontend: Vite 6 + React 18 + TS (`frontend/`). In Docker the built UI is
+  served by FastAPI itself at / (single origin, port 8000). In native dev the
+  Vite server (5173) proxies `/api` to `http://127.0.0.1:8000`, so the UI uses
+  relative URLs either way.
 
 ## Run
 
 Docker (recommended, zero host install - single container, UI+API on 8000):
 
     docker compose up --build        # publishes 127.0.0.1:8000 only
-    # perso.txt is bind-mounted read-only at /app/perso.txt, NEVER baked into the image
+    # UI: http://127.0.0.1:8000  |  API docs: http://127.0.0.1:8000/api/docs
+    # CLI in container: docker compose exec doc-incognito python -m scripts.anonymize_document /app/uploads/x.pdf
     # Dockerfile: node:22-alpine builds frontend/dist, python:3.12-slim-bookworm runs
-    #   the API + apt tesseract-ocr(-fra)/ghostscript/poppler-utils + pip ocrmypdf + fr_core_news_lg
+    #   the API (+ backend/app and backend/scripts) with apt tesseract-ocr(-fra)/
+    #   ghostscript/poppler-utils + pip ocrmypdf + spacy fr_core_news_lg
+    # perso.txt is bind-mounted read-only at /app/perso.txt, NEVER baked into the image
 
+Native dev (two processes):
 
     # backend, port 8000
     cd backend && ./venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
@@ -44,6 +51,10 @@ fall back to `nohup <cmd> > /tmp/doc-incognito-<name>.log 2>&1 & disown`.
 
 ## Layout
 
+    Dockerfile             multi-stage image (frontend build + python:3.12-slim runtime)
+    docker-compose.yml     127.0.0.1:8000 only; perso.txt mounted ro at /app/perso.txt
+    .dockerignore          excludes perso.txt, uploads/, output/, venv, node_modules
+    setup.sh / setup.ps1   one-shot native setup (macOS/Linux/Windows)
     backend/app/core/      config (pydantic-settings, ANON_ env prefix), analyzer singleton, French regex patterns
     backend/app/services/  business logic, shared by API and CLI (no duplication)
     backend/app/routers/   /api/anonymize, /api/redact, /api/files, /api/personal-data, /api/metadata/inspect
@@ -84,6 +95,11 @@ fall back to `nohup <cmd> > /tmp/doc-incognito-<name>.log 2>&1 & disown`.
 - `GET /api/files/{filename}` is confined to `output/` (resolve +
   `is_relative_to` + suffix allowlist + `Content-Disposition: attachment`).
   Raw uploads in `uploads/` are never served.
+- Docker invariants: docker-compose.yml must keep publishing `127.0.0.1:8000:8000`
+  (never `0.0.0.0:...`); uvicorn inside the container binds 0.0.0.0 because the
+  port mapping is loopback-only on the host. perso.txt must stay out of the
+  image (.dockerignore) and be bind-mounted read-only; uploads/ and output/
+  stay bind-mounted to the host so results are visible outside the container.
 - Uploads go through `services/uploads.save_upload`: suffix allowlist, size cap
   (`ANON_MAX_UPLOAD_BYTES`, default 50 MB, 413 when exceeded), file name reduced
   to its final component, disk write off the event loop.

@@ -39,6 +39,7 @@ RUN pip install --upgrade pip \
     && python -m spacy download fr_core_news_lg
 
 COPY backend/app ./app
+COPY backend/scripts ./scripts
 COPY --from=frontend-build /build/dist /app/frontend/dist
 
 # Runtime layout mirrors the repo root so config paths resolve to /app:
