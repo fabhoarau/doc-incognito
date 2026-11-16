@@ -20,9 +20,12 @@ export default function App() {
     <div className="app">
       <header>
         <div className="header-row">
-          <div>
-            <h1>doc-incognito</h1>
-            <p className="subtitle">{t.header.subtitle}</p>
+          <div className="brand">
+            <img src="/favicon.svg" alt="" className="brand-logo" />
+            <div>
+              <h1>doc-incognito</h1>
+              <p className="subtitle">{t.header.subtitle}</p>
+            </div>
           </div>
           <div className="header-side">
             <span className="offline-badge">{t.header.offline}</span>

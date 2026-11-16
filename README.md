@@ -1,5 +1,7 @@
 # doc-incognito
 
+<img src="frontend/public/favicon.svg" width="96" alt="doc-incognito logo" />
+
 Local-first document anonymizer: redact PDFs and images before sending them
 to AI. Everything runs on your machine - no network calls, nothing leaves.
 

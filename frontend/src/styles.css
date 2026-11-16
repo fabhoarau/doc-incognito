@@ -32,6 +32,18 @@ header h1 {
   flex-wrap: wrap;
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  flex-shrink: 0;
+  height: 40px;
+  width: 40px;
+}
+
 .header-side {
   display: flex;
   align-items: center;
@@ -195,6 +207,11 @@ a {
 @media (max-width: 640px) {
   .explain-grid {
     grid-template-columns: 1fr;
+  }
+
+  .brand-logo {
+    height: 32px;
+    width: 32px;
   }
 }
 

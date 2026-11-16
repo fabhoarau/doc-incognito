@@ -55,6 +55,13 @@ describe('App', () => {
     expect(screen.getByRole('tab', { name: 'Metadata check' })).toBeInTheDocument()
   })
 
+  it('shows the logo next to the title in the header', () => {
+    renderApp()
+    const logo = document.querySelector('img.brand-logo')
+    expect(logo).toHaveAttribute('src', '/favicon.svg')
+    expect(screen.getByRole('heading', { name: 'doc-incognito' })).toBeInTheDocument()
+  })
+
   it('switches the whole UI to French', () => {
     renderApp()
     fireEvent.change(screen.getByLabelText('Language'), { target: { value: 'fr' } })
