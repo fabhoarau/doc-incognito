@@ -7,31 +7,39 @@
 #                                                # or drop fra.traineddata into
 #                                                #   C:\Program Files\Tesseract-OCR\tessdata\
 #   winget install ArtifexSoftware.Ghostscript  # required by ocrmypdf
-#   pip install ocrmypdf                         # inside the venv, done below
+# ocrmypdf itself is pip-installed into the venv below.
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-function Find-Python {
-    foreach ($c in @('py -3.14', 'py -3.13', 'py -3.12', 'py -3.11', 'python', 'python3')) {
-        $out = cmd /c "$c --version 2>nul"
-        if ($out -match 'Python 3\.(11|12|13|14)\.') { return $c }
+# Python candidates as argument arrays, so they can be splatted (no cmd /c).
+$script:pythonCandidates = @(
+    @('py', '-3.14'), @('py', '-3.13'), @('py', '-3.12'), @('py', '-3.11'),
+    @('python'), @('python3')
+)
+
+function Find-PythonArgs {
+    foreach ($c in $script:pythonCandidates) {
+        try {
+            $out = & $c[0] @($c | Select-Object -Skip 1) --version 2>$null
+        } catch { continue }
+        if ("$out" -match 'Python 3\.(11|12|13|14)\.') { return , $c }  # comma: keep array shape (no pipeline unrolling)
     }
     return $null
 }
 
-$py = Find-Python
-if (-not $py) {
+$pyArgs = Find-PythonArgs
+if (-not $pyArgs) {
     Write-Error "No Python 3.11-3.14 found. Install one (winget install Python.Python.3.12) and retry."
     exit 1
 }
-Write-Host "Using: $py"
+Write-Host "Using: $($pyArgs -join ' ')"
 
 Push-Location backend
-cmd /c "$py -m venv venv"
-$venvPy = Join-Path $PSScriptRoot 'backend\venv\Scripts\python.exe'
+& $pyArgs[0] @($pyArgs | Select-Object -Skip 1) -m venv venv
+$venvPy = Join-Path (Get-Location) 'venv\Scripts\python.exe'
 & $venvPy -m pip install --upgrade pip
 & $venvPy -m pip install -r requirements.txt
-& $venvPy -m pip install ocrmypdf   # Homebrew on macOS; pip works on Windows (needs ghostscript + tesseract on PATH)
+& $venvPy -m pip install ocrmypdf   # Homebrew on macOS; pip on Windows (needs ghostscript + tesseract on PATH)
 & $venvPy -m spacy download fr_core_news_lg
 Pop-Location
 
@@ -50,6 +58,6 @@ if (-not (Test-Path perso.txt)) {
 }
 
 Write-Host ""
-Write-Host "Setup complete. Start the API with:"
-Write-Host "  backend\venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000   (from backend\)"
+Write-Host "Setup complete. Start the API with (venv must be ACTIVATED so venv Scripts are on PATH):"
+Write-Host "  cd backend ; .\venv\Scripts\Activate.ps1 ; uvicorn app.main:app --host 127.0.0.1 --port 8000"
 Write-Host "Then the web UI:  cd frontend ; npm install ; npm run dev   -> http://127.0.0.1:5173"
