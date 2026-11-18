@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 #
 # doc-incognito - single local-only container (API + built UI on port 8000).
-# perso.txt is NEVER baked into the image: mount it read-only at runtime.
+# perso.txt is NEVER baked into the image: bind-mount it from the host at runtime.
 #
 # Build:  docker build -t doc-incognito .
 # Run:    docker run --rm -p 127.0.0.1:8000:8000 \
-#           -v "$PWD/perso.txt:/app/perso.txt:ro" \
+#           -v "$PWD/perso.txt:/app/perso.txt" \
 #           -v "$PWD/output:/app/output" -v "$PWD/uploads:/app/uploads" \
 #           doc-incognito
 # Or simply: docker compose up --build   (see docker-compose.yml)

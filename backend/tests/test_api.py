@@ -17,6 +17,16 @@ def test_personal_data_get_put_roundtrip():
     assert client.get("/api/personal-data").json()["content"] == "Nouvelle entree\n"
 
 
+def test_personal_data_put_unwritable_file_is_422_not_500(tmp_path, monkeypatch):
+    # regression: read-only perso.txt mount in Docker used to produce a 500
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "personal_data_file", tmp_path)  # a dir -> OSError
+    r = client.put("/api/personal-data", json={"content": "x\n"})
+    assert r.status_code == 422
+    assert "Cannot write" in r.json()["detail"]
+
+
 def test_anonymize_pdf_tokenizes_personal_data_and_passes_guardrail(tmp_path, make_pdf):
     pdf = make_pdf(tmp_path / "doc.pdf", "Monsieur Jean Dupont, ne le 01/01/1990 a Paris.")
     with open(pdf, "rb") as fh:

@@ -31,7 +31,7 @@ Presidio, spaCy, local-first, self-hosted, offline, GDPR, French documents.*
     doc-incognito/
     |- AGENTS.md              # project context for AI agents (conventions, invariants)
     |- Dockerfile             # multi-stage image: frontend build + backend runtime
-    |- docker-compose.yml     # publishes 127.0.0.1:8000 only, mounts perso.txt read-only
+    |- docker-compose.yml     # publishes 127.0.0.1:8000 only, bind-mounts perso.txt from the host
     |- .dockerignore          # keeps perso.txt, uploads/, output/, venv out of the image
     |- LICENSE                # MIT
     |- backend/
@@ -59,7 +59,7 @@ Presidio, spaCy, local-first, self-hosted, offline, GDPR, French documents.*
 
 Everything (Python, tesseract+french, ghostscript, ocrmypdf, spaCy model, built
 UI) ships in one image. The container publishes on your loopback only, and
-`perso.txt` is mounted read-only - it is never baked into the image.
+`perso.txt` is bind-mounted from your host (editable from the UI) - it is never baked into the image.
 
     git clone https://github.com/fabhoarau/doc-incognito.git
     cd doc-incognito
@@ -71,11 +71,11 @@ Equivalent `docker run`:
 
     docker build -t doc-incognito .
     docker run --rm -p 127.0.0.1:8000:8000 \
-      -v "$PWD/perso.txt:/app/perso.txt:ro" \
+      -v "$PWD/perso.txt:/app/perso.txt" \
       -v "$PWD/uploads:/app/uploads" -v "$PWD/output:/app/output" \
       doc-incognito
 
-(Windows PowerShell: `-v "${PWD}\perso.txt:/app/perso.txt:ro"`.)
+(Windows PowerShell: `-v "${PWD}\perso.txt:/app/perso.txt"`.)
 Anonymized files land in `./output/` on your host. The image is large
 (~2.7 GB) because of the spaCy `fr_core_news_lg` model. perso.txt is
 gitignored and never leaves your machine.

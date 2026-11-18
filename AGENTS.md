@@ -27,7 +27,7 @@ runs last and fails loudly if any personal entry survives.
     # Dockerfile: node:22-alpine builds frontend/dist, python:3.12-slim-bookworm runs
     #   the API (+ backend/app and backend/scripts) with apt tesseract-ocr(-fra)/
     #   ghostscript/poppler-utils + pip ocrmypdf + spacy fr_core_news_lg
-    # perso.txt is bind-mounted read-only at /app/perso.txt, NEVER baked into the image
+    # perso.txt is bind-mounted (rw, editable from the UI) at /app/perso.txt, NEVER baked into the image
 
 ## Test (contributors run the suites natively)
 
@@ -100,7 +100,8 @@ fall back to `nohup <cmd> > /tmp/doc-incognito-<name>.log 2>&1 & disown`.
 - Docker invariants: docker-compose.yml must keep publishing `127.0.0.1:8000:8000`
   (never `0.0.0.0:...`); uvicorn inside the container binds 0.0.0.0 because the
   port mapping is loopback-only on the host. perso.txt must stay out of the
-  image (.dockerignore) and be bind-mounted read-only; uploads/ and output/
+  image (.dockerignore) and be bind-mounted from the host (read-write so the UI editor
+  can save it); uploads/ and output/
   stay bind-mounted to the host so results are visible outside the container.
 - Uploads go through `services/uploads.save_upload`: suffix allowlist, size cap
   (`ANON_MAX_UPLOAD_BYTES`, default 50 MB, 413 when exceeded), file name reduced

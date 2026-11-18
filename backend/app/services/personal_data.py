@@ -28,8 +28,18 @@ def read_raw() -> str:
 
 
 def save(content: str) -> None:
-    """Overwrite perso.txt with the given content."""
-    settings.personal_data_file.write_text(content)
+    """Overwrite perso.txt with the given content.
+
+    Filesystem errors (e.g. a read-only bind mount in Docker) surface as
+    ValueError -> 422 via the global handler, never as a raw 500.
+    """
+    try:
+        settings.personal_data_file.write_text(content)
+    except OSError as exc:
+        raise ValueError(
+            f"Cannot write {settings.personal_data_file.name}: {exc.strerror or exc}. "
+            "In Docker, mount it read-write: -v ./perso.txt:/app/perso.txt"
+        ) from exc
 
 
 def tokenize(text: str, entries: list[str]) -> str:

@@ -12,8 +12,10 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
-      # perso.txt never enters the image; it is mounted read-only.
-      - ./perso.txt:/app/perso.txt:ro
+      # perso.txt never enters the image (.dockerignore); it is bind-mounted
+      # from the host and editable from the UI (read-write on purpose - the
+      # "My personal data" tab saves through it).
+      - ./perso.txt:/app/perso.txt
       - ./uploads:/app/uploads
       - ./output:/app/output
     restart: unless-stopped

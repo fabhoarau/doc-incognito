@@ -1,5 +1,8 @@
 """Unit tests for app.services.personal_data (perso.txt handling)."""
 
+import pytest
+
+from app.core.config import settings
 from app.services import personal_data
 
 
@@ -22,3 +25,11 @@ def test_save_then_read_raw_roundtrip():
     personal_data.save("Nouvelle entree\n")
     assert personal_data.read_raw() == "Nouvelle entree\n"
     assert personal_data.load() == ["Nouvelle entree"]
+
+
+def test_save_oserror_becomes_valueerror(tmp_path, monkeypatch):
+    # e.g. read-only bind mount in Docker: writing must raise ValueError
+    # (mapped to 422 by the API), never leak a raw OSError/500.
+    monkeypatch.setattr(settings, "personal_data_file", tmp_path)  # a dir: IsADirectoryError
+    with pytest.raises(ValueError, match="Cannot write"):
+        personal_data.save("x\n")
